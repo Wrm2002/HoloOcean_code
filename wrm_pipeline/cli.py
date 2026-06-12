@@ -74,6 +74,15 @@ def build_parser() -> argparse.ArgumentParser:
     bigworld_ready.add_argument("--package-dir", type=Path, default=Path("wrm_projects/04_wrmabyss_holoocean_package/WRMAbyss"))
     bigworld_ready.add_argument("--out", required=True, type=Path)
 
+    train_tiny = sub.add_parser("train-tiny-sonar", help="Train the dependency-light LineTrace sonar baseline")
+    train_tiny.add_argument("--data", required=True, type=Path)
+    train_tiny.add_argument("--out", required=True, type=Path)
+    train_tiny.add_argument("--image-size", type=int, default=64)
+    train_tiny.add_argument("--epochs", type=int, default=200)
+    train_tiny.add_argument("--lr", type=float, default=0.5)
+    train_tiny.add_argument("--test-ratio", type=float, default=0.25)
+    train_tiny.add_argument("--seed", type=int, default=7)
+
     analysis = sub.add_parser("analyze-yolo-predictions", help="Summarize YOLO txt predictions against a split")
     analysis.add_argument("--dataset", required=True, type=Path)
     analysis.add_argument("--predictions", required=True, type=Path)
@@ -187,6 +196,21 @@ def main(argv: list[str] | None = None) -> None:
         print(json.dumps(stats, indent=2, ensure_ascii=False))
         if result.errors:
             raise SystemExit(1)
+        return
+
+    if args.command == "train-tiny-sonar":
+        from .training.tiny_sonar_classifier import run_training
+
+        stats = run_training(
+            args.data,
+            args.out,
+            image_size=args.image_size,
+            epochs=args.epochs,
+            lr=args.lr,
+            test_ratio=args.test_ratio,
+            seed=args.seed,
+        )
+        print(json.dumps(stats, indent=2, ensure_ascii=False))
         return
 
     if args.command == "analyze-yolo-predictions":
