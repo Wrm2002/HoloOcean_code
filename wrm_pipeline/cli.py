@@ -16,6 +16,8 @@ from .previews import copy_final_exam_previews
 from .readiness import check_final_exam
 from .scripts_catalog import grouped_scripts
 from .sonar_yolo import prepare_sonar_yolo_dataset
+from .validation.bigworld_readiness import run_readiness_check
+from .validation.route_b_package import validate_package
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -58,6 +60,19 @@ def build_parser() -> argparse.ArgumentParser:
     visual_audit.add_argument("--warn-luma", type=float, default=8.0)
     visual_audit.add_argument("--warn-dark-ratio", type=float, default=0.95)
     visual_audit.add_argument("--fail-on-warning", action="store_true")
+
+    route_package = sub.add_parser("validate-route-b-package", help="Validate local Route-B package/scenario JSON")
+    route_package.add_argument("--package-dir", type=Path, default=Path("wrm_projects/04_wrmabyss_holoocean_package/WRMAbyss"))
+
+    bigworld_ready = sub.add_parser("validate-bigworld-readiness", help="Run offline BigWorld tile/package readiness checks")
+    bigworld_ready.add_argument("--project-root", type=Path, default=Path("."))
+    bigworld_ready.add_argument(
+        "--tile-csv",
+        type=Path,
+        default=Path("wrm_projects/03_gaea_heightfield_workflow/03_ue_import_specs/gaea_1k_ue_tile_import_steps.csv"),
+    )
+    bigworld_ready.add_argument("--package-dir", type=Path, default=Path("wrm_projects/04_wrmabyss_holoocean_package/WRMAbyss"))
+    bigworld_ready.add_argument("--out", required=True, type=Path)
 
     analysis = sub.add_parser("analyze-yolo-predictions", help="Summarize YOLO txt predictions against a split")
     analysis.add_argument("--dataset", required=True, type=Path)
@@ -141,6 +156,37 @@ def main(argv: list[str] | None = None) -> None:
             fail_on_warning=args.fail_on_warning,
         )
         print(json.dumps(stats, indent=2, ensure_ascii=False))
+        return
+
+    if args.command == "validate-route-b-package":
+        errors, config, scenarios = validate_package(args.package_dir)
+        stats = {
+            "status": "ok" if not errors else "error",
+            "package": config.get("name") if config else None,
+            "scenario_count": len(scenarios),
+            "errors": errors,
+        }
+        print(json.dumps(stats, indent=2, ensure_ascii=False))
+        if errors:
+            raise SystemExit(1)
+        return
+
+    if args.command == "validate-bigworld-readiness":
+        project_root = args.project_root.resolve()
+        tile_csv = (project_root / args.tile_csv).resolve() if not args.tile_csv.is_absolute() else args.tile_csv
+        package_dir = (project_root / args.package_dir).resolve() if not args.package_dir.is_absolute() else args.package_dir
+        out_dir = (project_root / args.out).resolve() if not args.out.is_absolute() else args.out
+        result, report_path = run_readiness_check(project_root, tile_csv, package_dir, out_dir)
+        stats = {
+            "status": "ok" if not result.errors else "error",
+            "report": str(report_path),
+            "errors": result.errors,
+            "warnings": result.warnings,
+            "notes": result.notes,
+        }
+        print(json.dumps(stats, indent=2, ensure_ascii=False))
+        if result.errors:
+            raise SystemExit(1)
         return
 
     if args.command == "analyze-yolo-predictions":
