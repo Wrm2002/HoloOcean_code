@@ -8,26 +8,13 @@ from __future__ import annotations
 
 import unreal
 
+from wrm_ue_helpers import set_component_property, set_label
+
 
 SOURCE_TILE_MAP_PATH = "/Game/BigWorldLite/Maps/Terrain_1_1"
 MAP_PATH = "/Game/WRMRouteB/Maps/BigWorldLiteSmoke"
 SONAR_NATIVE_CLASS_PATH = "/Script/SonarDatasetTools.SonarDatasetEmitterActor"
 SONAR_OUTPUT_DIR = "Saved/SonarDataset_BigWorldLiteSmoke01"
-
-
-def set_label(actor: unreal.Actor, label: str) -> unreal.Actor:
-    actor.set_actor_label(label)
-    return actor
-
-
-def set_component_property(component: unreal.ActorComponent, names: list[str], value) -> None:
-    for name in names:
-        try:
-            component.set_editor_property(name, value)
-            return
-        except Exception:
-            continue
-    unreal.log_warning(f"Could not set any of {names} on {component.get_name()}")
 
 
 def duplicate_or_load_map() -> None:

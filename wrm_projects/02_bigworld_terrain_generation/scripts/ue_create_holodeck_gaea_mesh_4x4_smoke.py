@@ -7,6 +7,8 @@ from pathlib import Path
 
 import unreal
 
+from wrm_ue_helpers import configure_mesh_collision, set_component_property, set_label
+
 
 PROJECT_ROOT = Path(
     os.environ.get("WRM_PROJECT_ROOT", Path(__file__).resolve().parents[3])
@@ -19,38 +21,6 @@ MESH_DEST = "/Game/WRMRouteB/GaeaMeshes"
 MESH_NAME = "SM_GaeaErosion2_4x4_1k"
 SONAR_NATIVE_CLASS_PATH = "/Script/SonarDatasetTools.SonarDatasetEmitterActor"
 SONAR_OUTPUT_DIR = "Saved/SonarDataset_GaeaErosion2Mesh4x4Smoke01"
-
-
-def set_label(actor: unreal.Actor, label: str) -> unreal.Actor:
-    actor.set_actor_label(label)
-    return actor
-
-
-def set_component_property(component: unreal.ActorComponent, names: list[str], value) -> None:
-    for name in names:
-        try:
-            component.set_editor_property(name, value)
-            return
-        except Exception:
-            continue
-    unreal.log_warning(f"Could not set any of {names} on {component.get_name()}")
-
-
-def configure_mesh_collision(mesh: unreal.StaticMesh) -> None:
-    body_setup = mesh.get_editor_property("body_setup")
-    if body_setup is not None:
-        try:
-            body_setup.set_editor_property(
-                "collision_trace_flag",
-                unreal.CollisionTraceFlag.CTF_USE_COMPLEX_AS_SIMPLE,
-            )
-            unreal.log(f"Set {mesh.get_name()} collision_trace_flag=UseComplexAsSimple")
-        except Exception as exc:
-            unreal.log_warning(f"Could not set complex collision on {mesh.get_name()}: {exc}")
-    try:
-        mesh.set_editor_property("allow_cpu_access", True)
-    except Exception:
-        pass
 
 
 def load_tile_meshes() -> list[unreal.StaticMesh]:

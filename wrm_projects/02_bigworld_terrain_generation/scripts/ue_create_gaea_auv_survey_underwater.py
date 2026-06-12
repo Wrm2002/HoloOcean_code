@@ -4,56 +4,13 @@ from __future__ import annotations
 
 import unreal
 
+from wrm_ue_helpers import configure_mesh_collision, load_mesh, set_actor_property, set_component_property
+
 
 MAP_PATH = "/Game/WRMRouteB/Maps/GaeaErosion2AuvSurveyUnderwater"
 MESH_DEST = "/Game/WRMRouteB/GaeaMeshes"
 SONAR_NATIVE_CLASS_PATH = "/Script/SonarDatasetTools.SonarDatasetEmitterActor"
 SONAR_OUTPUT_DIR = "Saved/SonarDataset_GaeaAuvSurveyUnderwater01"
-
-
-def set_component_property(component: unreal.ActorComponent, names: list[str], value) -> bool:
-    for name in names:
-        try:
-            component.set_editor_property(name, value)
-            return True
-        except Exception:
-            continue
-    unreal.log_warning(f"Could not set any of {names} on {component.get_name()}")
-    return False
-
-
-def set_actor_property(actor: unreal.Actor, names: list[str], value) -> bool:
-    for name in names:
-        try:
-            actor.set_editor_property(name, value)
-            return True
-        except Exception:
-            continue
-    unreal.log_warning(f"Could not set any of {names} on {actor.get_name()}")
-    return False
-
-
-def load_mesh(path: str) -> unreal.StaticMesh:
-    mesh = unreal.EditorAssetLibrary.load_asset(path)
-    if mesh is None:
-        raise RuntimeError(f"Could not load mesh: {path}")
-    return mesh
-
-
-def configure_mesh_collision(mesh: unreal.StaticMesh) -> None:
-    body_setup = mesh.get_editor_property("body_setup")
-    if body_setup is not None:
-        try:
-            body_setup.set_editor_property(
-                "collision_trace_flag",
-                unreal.CollisionTraceFlag.CTF_USE_COMPLEX_AS_SIMPLE,
-            )
-        except Exception as exc:
-            unreal.log_warning(f"Could not set complex collision on {mesh.get_name()}: {exc}")
-    try:
-        mesh.set_editor_property("allow_cpu_access", True)
-    except Exception:
-        pass
 
 
 def load_gaea_tile_meshes() -> list[unreal.StaticMesh]:

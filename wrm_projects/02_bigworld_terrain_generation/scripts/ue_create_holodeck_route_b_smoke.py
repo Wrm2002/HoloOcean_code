@@ -8,15 +8,12 @@ from __future__ import annotations
 
 import unreal
 
+from wrm_ue_helpers import set_component_property, set_label
+
 
 MAP_PATH = "/Game/WRMRouteB/Maps/SonarSmoke"
 SONAR_BP_CLASS_PATH = "/Game/WRMRouteB/BP_SonarEmitter.BP_SonarEmitter_C"
 SONAR_NATIVE_CLASS_PATH = "/Script/SonarDatasetTools.SonarDatasetEmitterActor"
-
-
-def set_label(actor: unreal.Actor, label: str) -> unreal.Actor:
-    actor.set_actor_label(label)
-    return actor
 
 
 def spawn_environment() -> None:
@@ -64,16 +61,6 @@ def spawn_target_cube() -> None:
     cube.set_actor_scale3d(unreal.Vector(2.0, 2.0, 1.0))
     component = cube.static_mesh_component
     component.set_static_mesh(cube_asset)
-
-
-def set_component_property(component: unreal.ActorComponent, names: list[str], value) -> None:
-    for name in names:
-        try:
-            component.set_editor_property(name, value)
-            return
-        except Exception:
-            continue
-    unreal.log_warning(f"Could not set any of {names} on {component.get_name()}")
 
 
 def try_spawn_sonar_actor() -> bool:
