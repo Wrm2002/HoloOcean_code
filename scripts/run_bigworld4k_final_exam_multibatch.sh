@@ -1,7 +1,8 @@
 #!/bin/sh
 set -eu
 
-PROJECT_ROOT="/home/wrm/holoocean"
+SCRIPT_DIR=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
+PROJECT_ROOT="${WRM_PROJECT_ROOT:-$(CDPATH= cd -- "$SCRIPT_DIR/.." && pwd)}"
 PACKAGE_DST="$HOME/.local/share/holoocean/2.3.0/worlds/WRMAbyss"
 OUTPUT_ROOT="$PROJECT_ROOT/wrm_projects/05_validation_outputs/final_exam_multibatch_20260611"
 SPLIT_OUT="$OUTPUT_ROOT/final_exam_multibatch_splits"

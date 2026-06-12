@@ -5,7 +5,8 @@ set -eu
 # Purpose: rebuild the UE scene with a named output directory, package/sync it,
 # run HoloOcean until the requested frame count is collected, then audit it.
 
-PROJECT_ROOT="/home/wrm/holoocean"
+SCRIPT_DIR=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
+PROJECT_ROOT="${WRM_PROJECT_ROOT:-$(CDPATH= cd -- "$SCRIPT_DIR/.." && pwd)}"
 UE_EDITOR="/home/wrm/UnrealEngine/UE_5.3/Engine/Binaries/Linux/UnrealEditor"
 UPROJECT="$PROJECT_ROOT/engine/Holodeck.uproject"
 SCENARIO="Main_World_10km_4K_20260609-LineTraceDataset"

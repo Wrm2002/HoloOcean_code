@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-ROOT="/home/wrm/holoocean"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+ROOT="${WRM_PROJECT_ROOT:-$(cd "$SCRIPT_DIR/.." && pwd)}"
 PY="$ROOT/.venv/bin/python"
 OUT_ROOT="wrm_projects/05_validation_outputs/pipeline_validation_latest"
 

@@ -1,6 +1,8 @@
 #!/bin/sh
 set -eu
 
+SCRIPT_DIR=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
+PROJECT_ROOT="${WRM_PROJECT_ROOT:-$(CDPATH= cd -- "$SCRIPT_DIR/.." && pwd)}"
 SCENARIO="Main_World_10km_4K_20260609-LineTraceDataset"
 PACKAGE_SRC="wrm_projects/04_wrmabyss_holoocean_package/WRMAbyss"
 PACKAGE_DST="$HOME/.local/share/holoocean/2.3.0/worlds/WRMAbyss"
@@ -8,7 +10,7 @@ DATASET="$PACKAGE_DST/Linux/Holodeck/Saved/SonarDataset_BigWorld4KMultiClass01"
 AUDIT_OUT="wrm_projects/05_validation_outputs/bigworld4k_multiclass_dataset_audit_latest"
 YOLO_OUT="wrm_projects/05_validation_outputs/yolo_bigworld4k_multiclass_latest"
 
-cd /home/wrm/holoocean
+cd "$PROJECT_ROOT"
 rsync -a --delete "$PACKAGE_SRC/" "$PACKAGE_DST/"
 rm -rf "$DATASET"
 
