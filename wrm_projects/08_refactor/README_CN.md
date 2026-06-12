@@ -81,7 +81,7 @@ python3 -m wrm_pipeline run-legacy multibatch
 ## 当前已完成
 
 ```text
-1. FinalExam、YOLO 整理、审计、离线验证、地形工具、HoloOcean capture runner、tiny baseline、overview renderer 已迁入 wrm_pipeline。
+1. FinalExam、YOLO 整理/预测分析、审计、离线验证、地形工具、HoloOcean capture runner、tiny baseline、overview renderer 已迁入 wrm_pipeline。
 2. 对应 scripts/*.py 旧路径已变成兼容包装器。
 3. Shell 脚本和主要 UE Python 自动化脚本已去掉硬编码 /home/wrm/holoocean。
 4. .gitignore 已补充 WRM/Unreal 生成物、训练输出、缓存目录。

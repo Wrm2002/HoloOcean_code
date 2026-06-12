@@ -41,8 +41,10 @@ wrm_pipeline/
   catalog.py                # FinalExam 批次配置
   final_exam.py             # 高层数据集操作
   capture.py                # HoloOcean scenario 采集 runner
+  classes.py                # 识别类别和 class remap 元数据
   splits.py                 # 多模态 train/val/test 构建
-  baseline.py               # sonar-only baseline 数据准备和预测失败分析
+  baseline.py               # sonar-only baseline 数据准备
+  yolo_analysis.py          # YOLO 预测失败分析
   sonar_yolo.py             # SonarDatasetTools -> YOLO 数据整理
   readiness.py              # FinalExam 离线可读性检查
   previews.py               # 预览图复制
