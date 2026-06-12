@@ -1,11 +1,14 @@
 """Audit the BigWorld4K smoke-test scene from inside Unreal."""
 
 import os
+from pathlib import Path
+
 import unreal
 
 
+PROJECT_ROOT = Path(os.environ.get("WRM_PROJECT_ROOT", Path(__file__).resolve().parents[1])).expanduser().resolve()
 MAP_PATH = "/Game/BigWorld4K20260609/Maps/Main_World_10km_4K_20260609"
-SHOT_PATH = "/home/wrm/holoocean/wrm_projects/05_validation_outputs/ue_visual_checks_20260609/bigworld4k_smoke_scene_automation.png"
+SHOT_PATH = str(PROJECT_ROOT / "wrm_projects/05_validation_outputs/ue_visual_checks_20260609/bigworld4k_smoke_scene_automation.png")
 PREFIX = "WRM4K_"
 
 

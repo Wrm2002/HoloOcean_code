@@ -1,6 +1,7 @@
 """Import desktop FBX environment assets for the WRM underwater scene."""
 
 import json
+import os
 from pathlib import Path
 
 import unreal
@@ -8,7 +9,8 @@ import unreal
 
 SOURCE_DIR = Path("/home/wrm/桌面/Fbx")
 DESTINATION_PATH = "/Game/WRMImported/FbxEnv_20260611"
-REPORT_PATH = Path("/home/wrm/holoocean/wrm_projects/05_validation_outputs/fbx_env_20260611_import_report.json")
+PROJECT_ROOT = Path(os.environ.get("WRM_PROJECT_ROOT", Path(__file__).resolve().parents[1])).expanduser().resolve()
+REPORT_PATH = PROJECT_ROOT / "wrm_projects/05_validation_outputs/fbx_env_20260611_import_report.json"
 
 
 def safe_call(label, func):

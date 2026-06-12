@@ -9,7 +9,7 @@ from pathlib import Path
 import unreal
 
 
-PROJECT_ROOT = Path("/home/wrm/holoocean")
+PROJECT_ROOT = Path(os.environ.get("WRM_PROJECT_ROOT", Path(__file__).resolve().parents[1])).expanduser().resolve()
 MANIFEST = PROJECT_ROOT / "wrm_projects/02_bigworld_terrain_generation/outputs/generated_terrain_4k_windows_20260609/terrain_tiles_manifest.csv"
 MAP_PATH = "/Game/BigWorld4K20260609/Maps/Main_World_10km_4K_20260609"
 TARGET_HALF_HEIGHT_CM = {
