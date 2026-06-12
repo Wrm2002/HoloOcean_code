@@ -7,7 +7,8 @@ set -eu
 
 SCRIPT_DIR=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
 PROJECT_ROOT="${WRM_PROJECT_ROOT:-$(CDPATH= cd -- "$SCRIPT_DIR/.." && pwd)}"
-UE_EDITOR="/home/wrm/UnrealEngine/UE_5.3/Engine/Binaries/Linux/UnrealEditor"
+UE_ROOT="${WRM_UNREAL_ROOT:-$HOME/UnrealEngine/UE_5.3}"
+UE_EDITOR="${WRM_UE_EDITOR:-$UE_ROOT/Engine/Binaries/Linux/UnrealEditor}"
 UPROJECT="$PROJECT_ROOT/engine/Holodeck.uproject"
 SCENARIO="Main_World_10km_4K_20260609-LineTraceDataset"
 PACKAGE_SRC="$PROJECT_ROOT/wrm_projects/04_wrmabyss_holoocean_package/WRMAbyss"
