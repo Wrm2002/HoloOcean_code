@@ -1,17 +1,22 @@
 """Set up the final-exam BigWorld4K multimodal underwater dataset scene."""
 
-import csv
 import json
 import math
 import os
 import re
-from array import array
+import sys
 from pathlib import Path
+
+
+PROJECT_ROOT = Path(os.environ.get("WRM_PROJECT_ROOT", Path(__file__).resolve().parents[1])).expanduser().resolve()
+if str(PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0, str(PROJECT_ROOT))
+
+from wrm_pipeline.terrain.bigworld_tiles import load_tiles, surface_z
 
 import unreal
 
 
-PROJECT_ROOT = Path(os.environ.get("WRM_PROJECT_ROOT", Path(__file__).resolve().parents[1])).expanduser().resolve()
 MANIFEST = PROJECT_ROOT / "wrm_projects/02_bigworld_terrain_generation/outputs/generated_terrain_4k_windows_20260609/terrain_tiles_manifest.csv"
 IMPORT_REPORT = PROJECT_ROOT / "wrm_projects/05_validation_outputs/fbx_env_20260611_import_report.json"
 SETUP_REPORT = Path(
@@ -40,61 +45,6 @@ WRM_METAL_MATERIAL_PATH = WRM_MATERIAL_DIR + "/M_WRM_Metal_DarkWet.M_WRM_Metal_D
 WRM_SAND_MATERIAL_PATH = WRM_MATERIAL_DIR + "/M_WRM_Sand_Muted.M_WRM_Sand_Muted"
 WRM_PLANT_MATERIAL_PATH = WRM_MATERIAL_DIR + "/M_WRM_Plant_Kelp.M_WRM_Plant_Kelp"
 CLEAR_WATER_BACKDROP_MATERIAL_PATH = WRM_MATERIAL_DIR + "/M_WRM_ClearWaterBackdrop.M_WRM_ClearWaterBackdrop"
-
-
-class Tile:
-    def __init__(self, row):
-        self.path = PROJECT_ROOT / row["r16_path"].replace("\\", os.sep)
-        self.loc_x = float(row["ue_location_x_cm"])
-        self.loc_y = float(row["ue_location_y_cm"])
-        self.loc_z = float(row["ue_location_z_cm"])
-        self.scale_x = float(row["ue_scale_x"])
-        self.scale_y = float(row["ue_scale_y"])
-        self.scale_z = float(row["ue_scale_z"])
-        self.width = int(row["tile_resolution_x"])
-        self.height = int(row["tile_resolution_y"])
-        self.span_x = (self.width - 1) * self.scale_x
-        self.span_y = (self.height - 1) * self.scale_y
-        self.data = array("H")
-        with self.path.open("rb") as handle:
-            self.data.fromfile(handle, self.path.stat().st_size // 2)
-
-    def contains(self, x, y):
-        return self.loc_x <= x <= self.loc_x + self.span_x and self.loc_y <= y <= self.loc_y + self.span_y
-
-    def raw_to_world_z(self, value):
-        return self.loc_z + (float(value) - 32768.0) * self.scale_z / 128.0
-
-    def height_at(self, x, y):
-        fx = min(max((x - self.loc_x) / self.scale_x, 0.0), self.width - 1.0)
-        fy = min(max((y - self.loc_y) / self.scale_y, 0.0), self.height - 1.0)
-        x0 = int(math.floor(fx))
-        y0 = int(math.floor(fy))
-        x1 = min(x0 + 1, self.width - 1)
-        y1 = min(y0 + 1, self.height - 1)
-        sx = fx - x0
-        sy = fy - y0
-
-        def sample(ix, iy):
-            return self.raw_to_world_z(self.data[iy * self.width + ix])
-
-        z00 = sample(x0, y0)
-        z10 = sample(x1, y0)
-        z01 = sample(x0, y1)
-        z11 = sample(x1, y1)
-        return (z00 * (1.0 - sx) + z10 * sx) * (1.0 - sy) + (z01 * (1.0 - sx) + z11 * sx) * sy
-
-
-def load_tiles():
-    with MANIFEST.open("r", encoding="utf-8", newline="") as handle:
-        return [Tile(row) for row in csv.DictReader(handle)]
-
-
-def surface_z(tiles, x, y):
-    for tile in tiles:
-        if tile.contains(x, y):
-            return tile.height_at(x, y)
-    raise RuntimeError("no tile covers ({:.1f}, {:.1f})".format(x, y))
 
 
 def try_set(obj, prop, value):
@@ -518,7 +468,7 @@ def main():
     if not unreal.EditorLoadingAndSavingUtils.load_map(MAP_PATH):
         raise RuntimeError("failed to load {}".format(MAP_PATH))
 
-    tiles = load_tiles()
+    tiles = load_tiles(MANIFEST, PROJECT_ROOT)
     fbx_meshes = load_fbx_meshes()
     spawned = []
 

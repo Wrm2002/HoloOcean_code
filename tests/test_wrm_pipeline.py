@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import argparse
 import os
+import struct
 import tempfile
 import unittest
 from pathlib import Path
@@ -11,6 +12,7 @@ from wrm_pipeline.cli import build_parser
 from wrm_pipeline.final_exam import status
 from wrm_pipeline.paths import ProjectPaths
 from wrm_pipeline.scripts_catalog import classify_script
+from wrm_pipeline.terrain.bigworld_tiles import load_tiles, surface_z
 
 
 class ProjectPathsTests(unittest.TestCase):
@@ -67,6 +69,30 @@ class StatusTests(unittest.TestCase):
         self.assertNotIn("legacy_remote_note", info)
         self.assertEqual(info["backup"]["github"], "git@github.com:Wrm2002/HoloOcean_code.git")
         self.assertEqual(info["backup"]["local_full_branch"], "backup/pre-refactor-20260612")
+
+
+class BigWorldTileTests(unittest.TestCase):
+    def test_surface_z_bilinear_interpolates_manifest_tile(self) -> None:
+        with tempfile.TemporaryDirectory() as root:
+            project_root = Path(root)
+            tile_path = project_root / "tile.r16"
+            tile_path.write_bytes(struct.pack("<4H", 32768, 32896, 33024, 33152))
+
+            manifest = project_root / "manifest.csv"
+            manifest.write_text(
+                "\n".join(
+                    [
+                        "r16_path,ue_location_x_cm,ue_location_y_cm,ue_location_z_cm,ue_scale_x,ue_scale_y,ue_scale_z,tile_resolution_x,tile_resolution_y",
+                        "tile.r16,0,0,0,10,10,128,2,2",
+                    ]
+                ),
+                encoding="utf-8",
+            )
+
+            tiles = load_tiles(manifest, project_root)
+
+        self.assertEqual(len(tiles), 1)
+        self.assertAlmostEqual(surface_z(tiles, 5.0, 5.0), 192.0)
 
 
 if __name__ == "__main__":
