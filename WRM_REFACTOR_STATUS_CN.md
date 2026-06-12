@@ -24,6 +24,10 @@ git@github.com:Wrm2002/HoloOcean_code.git
 备份分支：backup/code-only-20260612
 备份提交：5785cdd8c4524b0621495b332fb67e7b77a4da83
 
+GitHub 重构后代码备份：
+备份分支：backup/refactor-code-20260612
+备份提交：5dee715136871b32cca091a8aae898aac88ac2d6
+
 本地完整备份分支：
 backup/pre-refactor-20260612
 
@@ -247,6 +251,30 @@ capture-holoocean frame_count
 BigWorld tile surface_z
 ```
 
+重构后已经跑过一次真实 UE/HoloOcean 端到端烟测：
+
+```bash
+WRM_FINAL_EXAM_BATCH_NAME=RefactorSmoke_2f_20260612 \
+WRM_FINAL_EXAM_FILE_PREFIX=refactor_smoke_2f_ \
+WRM_FINAL_EXAM_MAX_FRAMES=2 \
+WRM_FINAL_EXAM_MAX_TICKS=600 \
+WRM_FINAL_EXAM_VARIANT=route_a \
+sh scripts/run_bigworld4k_final_exam_dataset.sh
+```
+
+烟测结果：
+
+```text
+UE final-exam scene setup: ok
+UAT BuildCookRun: BUILD SUCCESSFUL, ExitCode=0
+HoloOcean capture: frames=2, max_frames=2, max_ticks=600
+dataset: /home/wrm/.local/share/holoocean/2.3.0/worlds/WRMAbyss/Linux/Holodeck/Saved/SonarDataset_RefactorSmoke_2f_20260612
+audit: wrm_projects/05_validation_outputs/final_exam_RefactorSmoke_2f_20260612_audit/audit_report.md
+visual_quality: status=ok
+```
+
+说明：这次烟测会临时把 UE map/package 刷成 `RefactorSmoke_2f_20260612` 的 2 帧配置；验证完成后已还原这些临时打包产物，源码重构提交不依赖这次临时配置。
+
 当前 `split-final-exam` 输出保持为：
 
 ```text
@@ -289,8 +317,7 @@ class_box_counts = {'0': 413, '1': 599, '2': 192, '3': 545}
 ## 下一步重构方向
 
 ```text
-1. 给 wrm_pipeline 增加轻量单元测试，锁住 CLI、路径和脚本分类。
-2. 继续把纯 Python、无 UE 运行依赖的旧脚本迁入包内。
-3. 继续对 UE Python 自动化脚本抽 shared helpers，减少重复的 actor、材质、标签处理。
-4. 保持旧入口可运行，确认 smoke 通过后再提交。
+1. 继续把纯 Python、无 UE 运行依赖的旧脚本迁入包内。
+2. 继续对 UE Python 自动化脚本抽 shared helpers，减少重复的 actor、材质、标签处理。
+3. 保持旧入口可运行；每次涉及 UE/HoloOcean 主链路后至少跑一次短帧 smoke。
 ```
