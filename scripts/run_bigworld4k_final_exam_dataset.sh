@@ -33,6 +33,7 @@ echo "ticks: $MAX_TICKS"
 echo "variant: $VARIANT"
 
 echo "== UE final-exam scene setup =="
+rm -f "$SETUP_REPORT"
 WRM_FINAL_EXAM_OUTPUT_DIR="$DATASET_REL" \
 WRM_FINAL_EXAM_FILE_PREFIX="$FILE_PREFIX" \
 WRM_FINAL_EXAM_MAX_FRAMES="$MAX_FRAMES" \
@@ -43,6 +44,33 @@ WRM_FINAL_EXAM_SETUP_REPORT="$SETUP_REPORT" \
   "$UE_EDITOR" "$UPROJECT" \
     -ExecutePythonScript="$PROJECT_ROOT/scripts/ue_setup_bigworld4k_final_exam_dataset_scene.py" \
     -unattended -nosplash
+
+SETUP_REPORT="$SETUP_REPORT" \
+EXPECTED_OUTPUT_DIR="$DATASET_REL" \
+EXPECTED_FILE_PREFIX="$FILE_PREFIX" \
+EXPECTED_MAX_FRAMES="$MAX_FRAMES" \
+EXPECTED_VARIANT="$VARIANT" \
+  "$PROJECT_ROOT/.venv/bin/python" - <<'PY'
+import json
+import os
+from pathlib import Path
+
+report_path = Path(os.environ["SETUP_REPORT"])
+if not report_path.is_file():
+    raise SystemExit("UE setup report was not created: {}".format(report_path))
+report = json.loads(report_path.read_text(encoding="utf-8"))
+checks = {
+    "output_directory": os.environ["EXPECTED_OUTPUT_DIR"],
+    "file_prefix": os.environ["EXPECTED_FILE_PREFIX"],
+    "max_frames": int(os.environ["EXPECTED_MAX_FRAMES"]),
+    "variant": os.environ["EXPECTED_VARIANT"],
+}
+for key, expected in checks.items():
+    actual = report.get(key)
+    if actual != expected:
+        raise SystemExit("UE setup report mismatch {}: {!r} != {!r}".format(key, actual, expected))
+print("UE setup report ok: {}".format(report_path))
+PY
 
 echo "== package WRMAbyss =="
 sh "$PROJECT_ROOT/scripts/package_route_b_wrmabyss.sh"

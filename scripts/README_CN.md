@@ -66,6 +66,7 @@ train_line_trace_sonar_baseline.py
 render_bigworld4k_scene_overview.py
 wrm_pipeline.py
 wrm_unreal_helpers.py
+wrm_bigworld4k_ue_shared.py
 ```
 
 地形/Gaea 工具目前还保留脚本入口：
@@ -108,6 +109,10 @@ ue_*.py
 ```
 
 `run_bigworld4k_final_exam_dataset.sh` 和 `run_bigworld4k_step5_dataset_batch.sh` 的 HoloOcean tick 逻辑已经收口到 `python3 -m wrm_pipeline capture-holoocean`。
+
+`ue_setup_bigworld4k_final_exam_dataset_scene.py` 和 `ue_setup_bigworld4k_multiclass_dataset_scene.py` 的材质库、clear-water backdrop、静态目标、scanner 参数等重复逻辑已经收口到 `wrm_bigworld4k_ue_shared.py`。
+
+`run_bigworld4k_final_exam_dataset.sh` 会校验 UE setup report，避免 UnrealEditor Python 执行失败但仍继续打包旧配置。
 
 Shell 脚本和主要 UE Python 自动化脚本已去掉硬编码项目根目录，会从脚本位置推断仓库根目录，也支持：
 

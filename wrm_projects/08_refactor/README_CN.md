@@ -87,13 +87,15 @@ python3 -m wrm_pipeline run-legacy multibatch
 4. .gitignore 已补充 WRM/Unreal 生成物、训练输出、缓存目录。
 5. GitHub 代码备份和本地完整备份分支已建立。
 6. BigWorld tile 高度采样、UE helper、HoloOcean tick 采集逻辑已抽成共享模块。
+7. BigWorld4K final/multiclass UE 场景脚本已共享材质、backdrop、静态目标和 scanner 配置 helper。
+8. `run_bigworld4k_final_exam_dataset.sh` 已增加 UE setup report 校验，避免 UnrealEditor Python 静默失败后继续打包旧配置。
 ```
 
 ## 下一步
 
 ```text
-1. 给 wrm_pipeline 增加轻量单元测试。
-2. 继续抽 UE Python 自动化共享 helper。
+1. 把 FinalExam route、target、scanner 参数继续数据化。
+2. 继续让其它 UE Python 自动化脚本复用 shared helper。
 3. 把更多无 UE 运行依赖的脚本迁入包内。
-4. 每次保持旧入口兼容，再跑 smoke 检查。
+4. 每次保持旧入口兼容，再跑短帧 smoke 检查。
 ```

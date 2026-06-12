@@ -78,6 +78,7 @@ wrm_pipeline/
 
 scripts/wrm_pipeline.py      # 兼容包装入口
 scripts/wrm_unreal_helpers.py
+scripts/wrm_bigworld4k_ue_shared.py
 wrm_projects/02_bigworld_terrain_generation/scripts/wrm_ue_helpers.py
 ```
 
@@ -205,7 +206,7 @@ scripts/train_line_trace_sonar_baseline.py
 scripts/render_bigworld4k_scene_overview.py
 ```
 
-以下脚本仍是 UE/HoloOcean 自动化主入口，已去掉硬编码项目根目录，但还没有迁入包内：
+以下脚本仍是 UE/HoloOcean 自动化主入口，已去掉硬编码项目根目录；其中部分重复 UE helper 已抽到 `scripts/wrm_bigworld4k_ue_shared.py`：
 
 ```text
 scripts/run_bigworld4k_final_exam_dataset.sh
@@ -220,6 +221,8 @@ scripts/ue_setup_bigworld4k_multiclass_dataset_scene.py
 ```
 
 其中 `run_bigworld4k_final_exam_dataset.sh` 和 `run_bigworld4k_step5_dataset_batch.sh` 已改为调用 `python3 -m wrm_pipeline capture-holoocean`，不再内嵌重复的 HoloOcean tick Python。
+
+`run_bigworld4k_final_exam_dataset.sh` 现在会在 UE setup 前删除旧 setup report，并在 UE 返回后校验本次 report 的 `output_directory`、`file_prefix`、`max_frames`、`variant`。这是为了防止 UnrealEditor 执行 Python 失败但仍返回 0，导致后续继续打包旧配置。
 
 ## 已验证
 
@@ -275,6 +278,30 @@ visual_quality: status=ok
 
 说明：这次烟测会临时把 UE map/package 刷成 `RefactorSmoke_2f_20260612` 的 2 帧配置；验证完成后已还原这些临时打包产物，源码重构提交不依赖这次临时配置。
 
+抽取 `scripts/wrm_bigworld4k_ue_shared.py` 后又跑过一次真实 UE/HoloOcean 端到端烟测：
+
+```bash
+WRM_FINAL_EXAM_BATCH_NAME=RefactorUEHelpersSmoke_2f_20260612 \
+WRM_FINAL_EXAM_FILE_PREFIX=refactor_ue_helpers_2f_ \
+WRM_FINAL_EXAM_MAX_FRAMES=2 \
+WRM_FINAL_EXAM_MAX_TICKS=600 \
+WRM_FINAL_EXAM_VARIANT=route_a \
+sh scripts/run_bigworld4k_final_exam_dataset.sh
+```
+
+烟测结果：
+
+```text
+UE setup report check: ok
+UAT BuildCookRun: BUILD SUCCESSFUL, ExitCode=0
+HoloOcean capture: frames=2, max_frames=2, max_ticks=600
+dataset: /home/wrm/.local/share/holoocean/2.3.0/worlds/WRMAbyss/Linux/Holodeck/Saved/SonarDataset_RefactorUEHelpersSmoke_2f_20260612
+audit: wrm_projects/05_validation_outputs/final_exam_RefactorUEHelpersSmoke_2f_20260612_audit/audit_report.md
+visual_quality: status=ok
+```
+
+说明：第一次 smoke 抓到 `scripts/` 过早插入 `sys.path` 导致 `scripts/wrm_pipeline.py` 遮挡真正 `wrm_pipeline/` 包；已改成追加 `scripts/`，并用 setup report 校验阻断这类 UE Python 静默失败。
+
 当前 `split-final-exam` 输出保持为：
 
 ```text
@@ -317,7 +344,7 @@ class_box_counts = {'0': 413, '1': 599, '2': 192, '3': 545}
 ## 下一步重构方向
 
 ```text
-1. 继续把纯 Python、无 UE 运行依赖的旧脚本迁入包内。
-2. 继续对 UE Python 自动化脚本抽 shared helpers，减少重复的 actor、材质、标签处理。
-3. 保持旧入口可运行；每次涉及 UE/HoloOcean 主链路后至少跑一次短帧 smoke。
+1. 把 FinalExam route、target、scanner 参数继续从 UE 脚本里数据化，减少主脚本长度。
+2. 继续把其它 UE Python 自动化脚本接入 shared helpers，但保持旧入口命令不变。
+3. 保持每次涉及 UE/HoloOcean 主链路后至少跑一次短帧 smoke。
 ```

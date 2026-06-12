@@ -1,7 +1,6 @@
 """Set up the final-exam BigWorld4K multimodal underwater dataset scene."""
 
 import json
-import math
 import os
 import re
 import sys
@@ -11,7 +10,11 @@ from pathlib import Path
 PROJECT_ROOT = Path(os.environ.get("WRM_PROJECT_ROOT", Path(__file__).resolve().parents[1])).expanduser().resolve()
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
+SCRIPTS_DIR = PROJECT_ROOT / "scripts"
+if str(SCRIPTS_DIR) not in sys.path:
+    sys.path.append(str(SCRIPTS_DIR))
 
+import wrm_bigworld4k_ue_shared as ue_shared
 from wrm_pipeline.terrain.bigworld_tiles import load_tiles, surface_z
 
 import unreal
@@ -44,106 +47,22 @@ WRM_ROCK_MATERIAL_PATH = WRM_MATERIAL_DIR + "/M_WRM_Rock_DarkWet.M_WRM_Rock_Dark
 WRM_METAL_MATERIAL_PATH = WRM_MATERIAL_DIR + "/M_WRM_Metal_DarkWet.M_WRM_Metal_DarkWet"
 WRM_SAND_MATERIAL_PATH = WRM_MATERIAL_DIR + "/M_WRM_Sand_Muted.M_WRM_Sand_Muted"
 WRM_PLANT_MATERIAL_PATH = WRM_MATERIAL_DIR + "/M_WRM_Plant_Kelp.M_WRM_Plant_Kelp"
-CLEAR_WATER_BACKDROP_MATERIAL_PATH = WRM_MATERIAL_DIR + "/M_WRM_ClearWaterBackdrop.M_WRM_ClearWaterBackdrop"
 
 
 def try_set(obj, prop, value):
-    try:
-        obj.set_editor_property(prop, value)
-    except Exception as exc:
-        unreal.log_warning("WRM_FINAL_SET_SKIPPED {}.{}: {}".format(obj.get_name(), prop, exc))
+    return ue_shared.try_set(obj, prop, value, "WRM_FINAL")
 
 
 def set_tags(actor, tags):
-    actor.set_editor_property("tags", [unreal.Name(tag) for tag in tags])
-
-
-def load_material(path):
-    material = unreal.EditorAssetLibrary.load_asset(path)
-    if not material:
-        unreal.log_warning("WRM_FINAL_MATERIAL_MISSING {}".format(path))
-    return material
-
-
-def ensure_material_dir():
-    if not unreal.EditorAssetLibrary.does_directory_exist(WRM_MATERIAL_DIR):
-        unreal.EditorAssetLibrary.make_directory(WRM_MATERIAL_DIR)
-
-
-def connect_constant(material, value, prop, x, y):
-    expr = unreal.MaterialEditingLibrary.create_material_expression(material, unreal.MaterialExpressionConstant, x, y)
-    expr.set_editor_property("r", float(value))
-    unreal.MaterialEditingLibrary.connect_material_property(expr, "", prop)
-
-
-def ensure_wrm_surface_material(asset_name, base_color, roughness, metallic=0.0, specular=0.25):
-    path = WRM_MATERIAL_DIR + "/" + asset_name + "." + asset_name
-    material = unreal.EditorAssetLibrary.load_asset(path)
-    if material:
-        return material
-    ensure_material_dir()
-    material = unreal.AssetToolsHelpers.get_asset_tools().create_asset(
-        asset_name, WRM_MATERIAL_DIR, unreal.Material, unreal.MaterialFactoryNew()
-    )
-    if not material:
-        return None
-    color = unreal.MaterialEditingLibrary.create_material_expression(
-        material, unreal.MaterialExpressionConstant3Vector, -520, -120
-    )
-    color.set_editor_property("constant", unreal.LinearColor(*base_color))
-    unreal.MaterialEditingLibrary.connect_material_property(color, "", unreal.MaterialProperty.MP_BASE_COLOR)
-    connect_constant(material, roughness, unreal.MaterialProperty.MP_ROUGHNESS, -520, 40)
-    connect_constant(material, metallic, unreal.MaterialProperty.MP_METALLIC, -520, 180)
-    connect_constant(material, specular, unreal.MaterialProperty.MP_SPECULAR, -520, 320)
-    unreal.MaterialEditingLibrary.recompile_material(material)
-    unreal.EditorAssetLibrary.save_asset(path, only_if_is_dirty=False)
-    return material
+    return ue_shared.set_tags(actor, tags)
 
 
 def ensure_wrm_material_library():
-    specs = [
-        ("M_WRM_Seabed_Neutral", (0.18, 0.24, 0.22, 1.0), 0.92, 0.0, 0.18),
-        ("M_WRM_Rock_DarkWet", (0.10, 0.13, 0.12, 1.0), 0.86, 0.0, 0.22),
-        ("M_WRM_Metal_DarkWet", (0.30, 0.34, 0.34, 1.0), 0.38, 1.0, 0.55),
-        ("M_WRM_Sand_Muted", (0.34, 0.31, 0.23, 1.0), 0.95, 0.0, 0.12),
-        ("M_WRM_Plant_Kelp", (0.08, 0.22, 0.13, 1.0), 0.82, 0.0, 0.18),
-    ]
-    for spec in specs:
-        ensure_wrm_surface_material(*spec)
-
-
-def ensure_clear_water_backdrop_material():
-    material = unreal.EditorAssetLibrary.load_asset(CLEAR_WATER_BACKDROP_MATERIAL_PATH)
-    if material:
-        return material
-    ensure_material_dir()
-    material = unreal.AssetToolsHelpers.get_asset_tools().create_asset(
-        "M_WRM_ClearWaterBackdrop", WRM_MATERIAL_DIR, unreal.Material, unreal.MaterialFactoryNew()
-    )
-    if not material:
-        return None
-    try_set(material, "shading_model", unreal.MaterialShadingModel.MSM_UNLIT)
-    try_set(material, "two_sided", True)
-    color = unreal.MaterialEditingLibrary.create_material_expression(
-        material, unreal.MaterialExpressionConstant3Vector, -360, 0
-    )
-    color.set_editor_property("constant", unreal.LinearColor(0.015, 0.16, 0.23, 1.0))
-    unreal.MaterialEditingLibrary.connect_material_property(color, "", unreal.MaterialProperty.MP_EMISSIVE_COLOR)
-    unreal.MaterialEditingLibrary.recompile_material(material)
-    unreal.EditorAssetLibrary.save_asset(CLEAR_WATER_BACKDROP_MATERIAL_PATH, only_if_is_dirty=False)
-    return material
+    return ue_shared.ensure_wrm_material_library(WRM_MATERIAL_DIR, "WRM_FINAL")
 
 
 def assign_landscape_material():
-    material = load_material(WRM_SEABED_MATERIAL_PATH)
-    if not material:
-        return
-    count = 0
-    for actor in unreal.EditorLevelLibrary.get_all_level_actors():
-        if actor.get_class().get_name() == "Landscape":
-            try_set(actor, "landscape_material", material)
-            count += 1
-    unreal.log("WRM_FINAL_LANDSCAPE_MATERIAL applied={}".format(count))
+    return ue_shared.assign_landscape_material(WRM_SEABED_MATERIAL_PATH, "WRM_FINAL")
 
 
 def delete_previous_scene_actors():
@@ -200,40 +119,18 @@ def ensure_environment():
             try_set(light_comp, "attenuation_radius", radius)
             try_set(light_comp, "light_color", unreal.Color(235, 255, 255, 255))
 
-    backdrop = actors_by_label.get("WRM4K_ClearWaterBackdrop")
-    if not backdrop:
-        backdrop = unreal.EditorLevelLibrary.spawn_actor_from_class(
-            unreal.StaticMeshActor, unreal.Vector(-142000.0, -234000.0, -10000.0), unreal.Rotator(0.0, 12.0, 0.0)
-        )
-        backdrop.set_actor_label("WRM4K_ClearWaterBackdrop")
-    backdrop.set_actor_location(unreal.Vector(-142000.0, -234000.0, -10000.0), False, False)
-    backdrop.set_actor_rotation(unreal.Rotator(0.0, 12.0, 0.0), False)
-    backdrop.set_actor_scale3d(unreal.Vector(24.0, 7000.0, 4200.0))
-    set_tags(backdrop, ["rgb_clear_water_backdrop", "no_sonar_target"])
-    backdrop_comp = backdrop.get_component_by_class(unreal.StaticMeshComponent)
-    if backdrop_comp:
-        cube_mesh = unreal.EditorAssetLibrary.load_asset("/Engine/BasicShapes/Cube.Cube")
-        if cube_mesh:
-            backdrop_comp.set_static_mesh(cube_mesh)
-        backdrop_comp.set_collision_enabled(unreal.CollisionEnabled.NO_COLLISION)
-        backdrop_comp.set_collision_profile_name("NoCollision")
-        material = ensure_clear_water_backdrop_material()
-        if material:
-            backdrop_comp.set_material(0, material)
-
-    for actor in unreal.EditorLevelLibrary.get_all_level_actors():
-        class_name = actor.get_class().get_name()
-        if class_name == "ExponentialHeightFog":
-            fog_comp = actor.get_component_by_class(unreal.ExponentialHeightFogComponent)
-            if fog_comp:
-                try_set(fog_comp, "fog_density", 0.00095)
-                try_set(fog_comp, "fog_height_falloff", 0.00032)
-                try_set(fog_comp, "fog_max_opacity", 0.30)
-                try_set(fog_comp, "start_distance", 60000.0)
-                try_set(fog_comp, "fog_inscattering_color", unreal.LinearColor(0.16, 0.70, 0.92, 1.0))
-                try_set(fog_comp, "volumetric_fog", False)
-        elif class_name == "PostProcessVolume":
-            try_set(actor, "enabled", False)
+    ue_shared.setup_clear_water_backdrop(
+        label="WRM4K_ClearWaterBackdrop",
+        material_dir=WRM_MATERIAL_DIR,
+        log_prefix="WRM_FINAL",
+    )
+    ue_shared.configure_clear_water_visibility(
+        fog_density=0.00095,
+        fog_height_falloff=0.00032,
+        fog_max_opacity=0.30,
+        start_distance=60000.0,
+        log_prefix="WRM_FINAL",
+    )
 
 
 def load_fbx_meshes():
@@ -255,35 +152,7 @@ def parse_bounds_extent_z(bounds_text):
 
 
 def spawn_static_target(tiles, spec, spawned):
-    mesh = unreal.EditorAssetLibrary.load_asset(spec["mesh"])
-    if not mesh:
-        raise RuntimeError("missing mesh asset: {}".format(spec["mesh"]))
-    x, y = spec["xy"]
-    z = surface_z(tiles, x, y) + spec["half_height"] + spec.get("clearance", 120.0)
-    actor = unreal.EditorLevelLibrary.spawn_actor_from_class(
-        unreal.StaticMeshActor, unreal.Vector(x, y, z), spec.get("rotation", unreal.Rotator(0.0, 0.0, 0.0))
-    )
-    actor.set_actor_label(spec["label"])
-    actor.set_actor_scale3d(spec["scale"])
-    set_tags(actor, spec["tags"])
-    comp = actor.get_component_by_class(unreal.StaticMeshComponent)
-    comp.set_static_mesh(mesh)
-    comp.set_collision_enabled(unreal.CollisionEnabled.QUERY_AND_PHYSICS)
-    comp.set_collision_profile_name("BlockAll")
-    material_path = spec.get("material_asset")
-    if material_path:
-        material = load_material(material_path)
-        if material:
-            comp.set_material(0, material)
-    try_set(comp, "mobility", unreal.ComponentMobility.STATIC)
-    entry = {
-        "label": spec["label"],
-        "class": spec.get("class_name"),
-        "mesh": spec["mesh"],
-        "tags": spec["tags"],
-        "location": [x, y, z],
-    }
-    spawned.append(entry)
+    _, entry = ue_shared.spawn_static_target(tiles, spec, log_prefix="WRM_FINAL", spawned=spawned)
     unreal.log("WRM_FINAL_TARGET {}".format(json.dumps(entry, ensure_ascii=False)))
 
 
@@ -323,11 +192,7 @@ def spawn_fbx_target(tiles, fbx_meshes, prefix8, label_suffix, class_id, materia
 
 
 def look_at_rotation(start, target):
-    delta = target - start
-    yaw = math.degrees(math.atan2(delta.y, delta.x))
-    flat = math.sqrt(delta.x * delta.x + delta.y * delta.y)
-    pitch = math.degrees(math.atan2(delta.z, flat))
-    return unreal.Rotator(0.0, pitch, yaw)
+    return ue_shared.look_at_rotation(start, target)
 
 
 def variant_config():
@@ -434,25 +299,21 @@ def spawn_emitter(tiles):
 
     scanner = actor.get_component_by_class(scanner_class)
     if scanner:
-        try_set(scanner, "TraceChannel", unreal.CollisionChannel.ECC_WORLD_STATIC)
-        try_set(scanner, "TraceLength", config["trace_length"])
-        try_set(scanner, "NumTraces", 1000)
-        try_set(scanner, "DegreesPerTrace", 0.15)
-        try_set(scanner, "VerticalSamples", 11)
-        try_set(scanner, "VerticalFovDegrees", config["vertical_fov"])
-        try_set(scanner, "CenterPitchOffsetDegrees", config["center_pitch"])
-        try_set(scanner, "OutputDirectory", OUTPUT_DIRECTORY)
-        try_set(scanner, "FilePrefix", FILE_PREFIX)
-        try_set(scanner, "bAutoSaveDatasetFrames", True)
-        try_set(scanner, "AutoSaveIntervalSeconds", AUTO_SAVE_INTERVAL_SECONDS)
-        try_set(scanner, "MaxAutoSaveFrames", MAX_AUTO_SAVE_FRAMES)
-        try_set(scanner, "bDrawDebug", False)
-        try_set(scanner, "bSaveRgbWithDatasetFrame", True)
-        try_set(scanner, "bSavePointCloudWithDatasetFrame", True)
-        try_set(scanner, "RgbImageWidth", 1280)
-        try_set(scanner, "RgbImageHeight", 720)
-        try_set(scanner, "bLockRgbExposure", True)
-        try_set(scanner, "RgbExposureBias", RGB_EXPOSURE_BIAS)
+        ue_shared.configure_sonar_scanner(
+            scanner,
+            trace_length=config["trace_length"],
+            output_directory=OUTPUT_DIRECTORY,
+            file_prefix=FILE_PREFIX,
+            auto_save_interval_seconds=AUTO_SAVE_INTERVAL_SECONDS,
+            max_auto_save_frames=MAX_AUTO_SAVE_FRAMES,
+            rgb_exposure_bias=RGB_EXPOSURE_BIAS,
+            num_traces=1000,
+            degrees_per_trace=0.15,
+            vertical_samples=11,
+            vertical_fov_degrees=config["vertical_fov"],
+            center_pitch_offset_degrees=config["center_pitch"],
+            log_prefix="WRM_FINAL",
+        )
     unreal.log(
         "WRM_FINAL_EMITTER variant={} output={} prefix={} frames={}".format(
             VARIANT, OUTPUT_DIRECTORY, FILE_PREFIX, MAX_AUTO_SAVE_FRAMES
