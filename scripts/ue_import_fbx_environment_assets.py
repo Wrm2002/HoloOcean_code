@@ -7,7 +7,9 @@ from pathlib import Path
 import unreal
 
 
-SOURCE_DIR = Path("/home/wrm/桌面/Fbx")
+SOURCE_DIR = Path(
+    os.environ.get("WRM_FBX_SOURCE_DIR", Path.home() / "桌面" / "Fbx")
+).expanduser()
 DESTINATION_PATH = "/Game/WRMImported/FbxEnv_20260611"
 PROJECT_ROOT = Path(os.environ.get("WRM_PROJECT_ROOT", Path(__file__).resolve().parents[1])).expanduser().resolve()
 REPORT_PATH = PROJECT_ROOT / "wrm_projects/05_validation_outputs/fbx_env_20260611_import_report.json"

@@ -12,12 +12,16 @@ from __future__ import annotations
 
 import csv
 import json
+import os
 from pathlib import Path
 
 import unreal
 
 
-ROOT = Path("/home/wrm/holoocean/wrm_projects/02_bigworld_terrain_generation")
+PROJECT_ROOT = Path(
+    os.environ.get("WRM_PROJECT_ROOT", Path(__file__).resolve().parents[3])
+).expanduser().resolve()
+ROOT = PROJECT_ROOT / "wrm_projects/02_bigworld_terrain_generation"
 CONFIG = ROOT / "configs" / "big_world_10km_4x4.json"
 MANIFEST = ROOT / "outputs" / "generated_terrain" / "terrain_tiles_manifest.csv"
 

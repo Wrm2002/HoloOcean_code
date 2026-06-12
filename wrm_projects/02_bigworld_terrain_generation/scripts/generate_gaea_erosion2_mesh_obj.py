@@ -9,9 +9,16 @@ Holodeck/HoloOcean and is visible to the LineTrace sonar.
 from __future__ import annotations
 
 import argparse
+import os
 from pathlib import Path
 
 import numpy as np
+
+
+PROJECT_ROOT = Path(
+    os.environ.get("WRM_PROJECT_ROOT", Path(__file__).resolve().parents[3])
+).expanduser().resolve()
+GAEA_DROPBOX = PROJECT_ROOT / "wrm_projects/03_gaea_heightfield_workflow/02_gaea_export_dropbox"
 
 
 def load_tile(path: Path) -> np.ndarray:
@@ -32,12 +39,12 @@ def main() -> int:
     parser.add_argument(
         "--tiles-dir",
         type=Path,
-        default=Path("/home/wrm/holoocean/wrm_projects/03_gaea_heightfield_workflow/02_gaea_export_dropbox/ue_ready_gaea_1k_Erosion2_Out_4x4"),
+        default=GAEA_DROPBOX / "ue_ready_gaea_1k_Erosion2_Out_4x4",
     )
     parser.add_argument(
         "--out",
         type=Path,
-        default=Path("/home/wrm/holoocean/wrm_projects/03_gaea_heightfield_workflow/02_gaea_export_dropbox/gaea_erosion2_4x4_mesh.obj"),
+        default=GAEA_DROPBOX / "gaea_erosion2_4x4_mesh.obj",
     )
     parser.add_argument("--samples-per-tile", type=int, default=129)
     args = parser.parse_args()

@@ -7,12 +7,16 @@ This keeps the original /Game/BigWorld maps untouched and creates a separate
 from __future__ import annotations
 
 import csv
+import os
 from pathlib import Path
 
 import unreal
 
 
-ROOT = Path("/home/wrm/holoocean/wrm_projects/02_bigworld_terrain_generation")
+PROJECT_ROOT = Path(
+    os.environ.get("WRM_PROJECT_ROOT", Path(__file__).resolve().parents[3])
+).expanduser().resolve()
+ROOT = PROJECT_ROOT / "wrm_projects/02_bigworld_terrain_generation"
 MANIFEST = ROOT / "outputs" / "generated_terrain_4k" / "terrain_tiles_manifest.csv"
 MAPS_ROOT = "/Game/BigWorldLite/Maps"
 
@@ -59,7 +63,7 @@ def write_import_notes() -> None:
             writer.writerow(
                 [
                     sublevel,
-                    str((Path("/home/wrm/holoocean") / row["r16_path"]).resolve()),
+                    str((PROJECT_ROOT / row["r16_path"]).resolve()),
                     row["ue_location_x_cm"],
                     row["ue_location_y_cm"],
                     row["ue_location_z_cm"],

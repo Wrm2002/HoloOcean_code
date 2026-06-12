@@ -1,7 +1,7 @@
 """Create a minimal Holodeck route-B sonar smoke-test map.
 
-Run with UnrealEditor-Cmd or UnrealEditor against:
-/home/wrm/holoocean/engine/Holodeck.uproject
+Run with UnrealEditor-Cmd or UnrealEditor against this checkout's
+engine/Holodeck.uproject.
 """
 
 from __future__ import annotations

@@ -2,11 +2,19 @@
 
 from __future__ import annotations
 
+import os
+from pathlib import Path
+
 import unreal
 
 
+PROJECT_ROOT = Path(
+    os.environ.get("WRM_PROJECT_ROOT", Path(__file__).resolve().parents[3])
+).expanduser().resolve()
 MAP_PATH = "/Game/WRMRouteB/Maps/GaeaErosion2Mesh4x4Smoke"
-MESH_OBJ = "/home/wrm/holoocean/wrm_projects/03_gaea_heightfield_workflow/02_gaea_export_dropbox/gaea_erosion2_4x4_mesh.obj"
+MESH_OBJ = str(
+    PROJECT_ROOT / "wrm_projects/03_gaea_heightfield_workflow/02_gaea_export_dropbox/gaea_erosion2_4x4_mesh.obj"
+)
 MESH_DEST = "/Game/WRMRouteB/GaeaMeshes"
 MESH_NAME = "SM_GaeaErosion2_4x4_1k"
 SONAR_NATIVE_CLASS_PATH = "/Script/SonarDatasetTools.SonarDatasetEmitterActor"

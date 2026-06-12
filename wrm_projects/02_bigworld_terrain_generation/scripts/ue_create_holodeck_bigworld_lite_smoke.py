@@ -1,7 +1,7 @@
 """Create a Holodeck route-B smoke-test map on a copied BigWorldLite tile.
 
-Run with UnrealEditor-Cmd or UnrealEditor against:
-/home/wrm/holoocean/engine/Holodeck.uproject
+Run with UnrealEditor-Cmd or UnrealEditor against this checkout's
+engine/Holodeck.uproject.
 """
 
 from __future__ import annotations

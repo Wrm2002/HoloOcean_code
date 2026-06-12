@@ -5,13 +5,16 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 from pathlib import Path
 from typing import Any
 
 import holoocean
 
 
-DEFAULT_PACKAGE_DIR = Path("/home/wrm/.local/share/holoocean/2.3.0/worlds/WRMAbyss")
+DEFAULT_PACKAGE_DIR = Path(
+    os.environ.get("WRM_HOLOOCEAN_WORLD", Path.home() / ".local/share/holoocean/2.3.0/worlds/WRMAbyss")
+).expanduser()
 
 
 def parse_args() -> argparse.Namespace:

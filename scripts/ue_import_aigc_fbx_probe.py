@@ -1,11 +1,14 @@
 """Probe-import an AIGC FBX into Holodeck without placing it in the main map."""
 
+import os
 from pathlib import Path
 
 import unreal
 
 
-FBX_PATH = Path("/home/wrm/桌面/830e066ffaa86d79760f1fd10bcf81a1.fbx")
+FBX_PATH = Path(
+    os.environ.get("WRM_AIGC_FBX_PATH", Path.home() / "桌面" / "830e066ffaa86d79760f1fd10bcf81a1.fbx")
+).expanduser()
 DESTINATION_PATH = "/Game/WRMImported/AIGC_830e066f"
 
 
