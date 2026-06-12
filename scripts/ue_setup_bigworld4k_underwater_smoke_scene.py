@@ -2,6 +2,8 @@
 
 import unreal
 
+from wrm_unreal_helpers import set_label
+
 
 MAP_PATH = "/Game/BigWorld4K20260609/Maps/Main_World_10km_4K_20260609"
 PREFIX = "WRM4K_"
@@ -16,10 +18,6 @@ def delete_old_wrm_actors():
 
 def set_tags(actor, tags):
     actor.set_editor_property("tags", [unreal.Name(tag) for tag in tags])
-
-
-def set_label(actor, label):
-    actor.set_actor_label(label)
 
 
 def try_set(obj, prop, value):

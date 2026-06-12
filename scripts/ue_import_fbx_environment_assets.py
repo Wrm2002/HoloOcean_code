@@ -6,6 +6,8 @@ from pathlib import Path
 
 import unreal
 
+from wrm_unreal_helpers import ensure_dir, safe_call
+
 
 SOURCE_DIR = Path(
     os.environ.get("WRM_FBX_SOURCE_DIR", Path.home() / "桌面" / "Fbx")
@@ -13,18 +15,6 @@ SOURCE_DIR = Path(
 DESTINATION_PATH = "/Game/WRMImported/FbxEnv_20260611"
 PROJECT_ROOT = Path(os.environ.get("WRM_PROJECT_ROOT", Path(__file__).resolve().parents[1])).expanduser().resolve()
 REPORT_PATH = PROJECT_ROOT / "wrm_projects/05_validation_outputs/fbx_env_20260611_import_report.json"
-
-
-def safe_call(label, func):
-    try:
-        return func()
-    except Exception as exc:
-        return "ERR({}: {})".format(label, exc)
-
-
-def ensure_dir(path):
-    if not unreal.EditorAssetLibrary.does_directory_exist(path):
-        unreal.EditorAssetLibrary.make_directory(path)
 
 
 def import_one(path):

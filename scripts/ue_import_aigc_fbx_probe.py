@@ -5,18 +5,13 @@ from pathlib import Path
 
 import unreal
 
+from wrm_unreal_helpers import safe_call
+
 
 FBX_PATH = Path(
     os.environ.get("WRM_AIGC_FBX_PATH", Path.home() / "桌面" / "830e066ffaa86d79760f1fd10bcf81a1.fbx")
 ).expanduser()
 DESTINATION_PATH = "/Game/WRMImported/AIGC_830e066f"
-
-
-def safe_call(label, func):
-    try:
-        return func()
-    except Exception as exc:
-        return "ERR({}: {})".format(label, exc)
 
 
 def main():
