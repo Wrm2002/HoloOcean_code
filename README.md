@@ -92,6 +92,7 @@ python3 -m wrm_pipeline split-final-exam
 python3 -m wrm_pipeline preview-to-desktop
 python3 -m wrm_pipeline check-final-exam
 python3 -m wrm_pipeline prepare-sonar-baseline
+python3 -m wrm_pipeline capture-holoocean --scenario <ScenarioName> --dataset <SonarDataset_dir> --max-frames 64 --max-ticks 2600
 python3 -m wrm_pipeline run-legacy multibatch
 ```
 

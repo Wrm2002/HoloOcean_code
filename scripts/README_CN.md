@@ -41,6 +41,9 @@ python3 -m wrm_pipeline validate-route-b-package
 python3 -m wrm_pipeline validate-bigworld-readiness --out <report_dir>
   离线检查 BigWorld tile 导入 CSV、.r16 文件、UE 坐标/缩放、package/scenario。
 
+python3 -m wrm_pipeline capture-holoocean --scenario <ScenarioName> --dataset <SonarDataset_dir> --max-frames 64 --max-ticks 2600
+  运行 HoloOcean scenario，直到 dataset_index.csv 达到目标帧数。
+
 python3 -m wrm_pipeline run-legacy multibatch
   调用旧的多批次采集 shell 入口。
 ```
@@ -62,6 +65,7 @@ build_gaea_highres_import_specs.py
 train_line_trace_sonar_baseline.py
 render_bigworld4k_scene_overview.py
 wrm_pipeline.py
+wrm_unreal_helpers.py
 ```
 
 地形/Gaea 工具目前还保留脚本入口：
@@ -102,6 +106,8 @@ run_bigworld4k_multiclass_smoke.sh
 run_bigworld4k_step5_dataset_batch.sh
 ue_*.py
 ```
+
+`run_bigworld4k_final_exam_dataset.sh` 和 `run_bigworld4k_step5_dataset_batch.sh` 的 HoloOcean tick 逻辑已经收口到 `python3 -m wrm_pipeline capture-holoocean`。
 
 Shell 脚本和主要 UE Python 自动化脚本已去掉硬编码项目根目录，会从脚本位置推断仓库根目录，也支持：
 

@@ -69,6 +69,7 @@ python3 -m wrm_pipeline split-final-exam
 python3 -m wrm_pipeline preview-to-desktop
 python3 -m wrm_pipeline check-final-exam
 python3 -m wrm_pipeline prepare-sonar-baseline
+python3 -m wrm_pipeline capture-holoocean --scenario <ScenarioName> --dataset <SonarDataset_dir> --max-frames 64 --max-ticks 2600
 ```
 
 长时间采集仍通过旧脚本兼容层：
@@ -80,11 +81,12 @@ python3 -m wrm_pipeline run-legacy multibatch
 ## 当前已完成
 
 ```text
-1. FinalExam、YOLO 整理、审计、离线验证、地形工具、tiny baseline、overview renderer 已迁入 wrm_pipeline。
+1. FinalExam、YOLO 整理、审计、离线验证、地形工具、HoloOcean capture runner、tiny baseline、overview renderer 已迁入 wrm_pipeline。
 2. 对应 scripts/*.py 旧路径已变成兼容包装器。
 3. Shell 脚本和主要 UE Python 自动化脚本已去掉硬编码 /home/wrm/holoocean。
 4. .gitignore 已补充 WRM/Unreal 生成物、训练输出、缓存目录。
 5. GitHub 代码备份和本地完整备份分支已建立。
+6. BigWorld tile 高度采样、UE helper、HoloOcean tick 采集逻辑已抽成共享模块。
 ```
 
 ## 下一步

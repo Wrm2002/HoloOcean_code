@@ -40,6 +40,7 @@ wrm_pipeline/
   paths.py                  # 项目根目录、HoloOcean world、常用路径
   catalog.py                # FinalExam 批次配置
   final_exam.py             # 高层数据集操作
+  capture.py                # HoloOcean scenario 采集 runner
   splits.py                 # 多模态 train/val/test 构建
   baseline.py               # sonar-only baseline 数据准备和预测失败分析
   sonar_yolo.py             # SonarDatasetTools -> YOLO 数据整理
@@ -58,6 +59,7 @@ wrm_pipeline/
     bigworld_readiness.py   # BigWorld tile/package 离线就绪检查
 
   terrain/
+    bigworld_tiles.py       # BigWorld .r16 tile 高度采样
     gaea_specs.py           # Gaea/UE 导入规格生成
     generate_stdlib.py      # 标准库地形 tile 生成
     validate_stdlib.py      # 标准库地形 tile 验证
@@ -69,6 +71,8 @@ wrm_pipeline/
     bigworld_overview.py
 
 scripts/wrm_pipeline.py      # 兼容包装入口
+scripts/wrm_unreal_helpers.py
+wrm_projects/02_bigworld_terrain_generation/scripts/wrm_ue_helpers.py
 ```
 
 ## 路径约定
@@ -148,6 +152,16 @@ python3 -m wrm_pipeline validate-bigworld-readiness --out wrm_projects/05_valida
 python3 -m wrm_pipeline train-tiny-sonar --data <dataset_dir> --out <run_out>
 ```
 
+HoloOcean 采集 runner：
+
+```bash
+python3 -m wrm_pipeline capture-holoocean \
+  --scenario <ScenarioName> \
+  --dataset <SonarDataset_dir> \
+  --max-frames 64 \
+  --max-ticks 2600
+```
+
 分析 YOLO 预测失败案例：
 
 ```bash
@@ -199,6 +213,8 @@ scripts/ue_setup_bigworld4k_final_exam_dataset_scene.py
 scripts/ue_setup_bigworld4k_multiclass_dataset_scene.py
 ```
 
+其中 `run_bigworld4k_final_exam_dataset.sh` 和 `run_bigworld4k_step5_dataset_batch.sh` 已改为调用 `python3 -m wrm_pipeline capture-holoocean`，不再内嵌重复的 HoloOcean tick Python。
+
 ## 已验证
 
 已经跑过的轻量检查：
@@ -209,6 +225,7 @@ python3 -m wrm_pipeline list-scripts
 python3 -m compileall -q wrm_pipeline scripts/*.py
 sh -n scripts/*.sh
 bash -n scripts/open_holodeck_editor.sh scripts/validate_wrm_pipeline.sh
+python3 -m unittest discover -s tests -v
 ```
 
 已经用临时目录 smoke 过的入口：
@@ -224,6 +241,8 @@ validate_big_world_tiles_stdlib.py
 build_gaea_highres_import_specs.py
 train-tiny-sonar
 render_bigworld4k_scene_overview.py
+capture-holoocean frame_count
+BigWorld tile surface_z
 ```
 
 当前 `split-final-exam` 输出保持为：
@@ -270,6 +289,6 @@ class_box_counts = {'0': 413, '1': 599, '2': 192, '3': 545}
 ```text
 1. 给 wrm_pipeline 增加轻量单元测试，锁住 CLI、路径和脚本分类。
 2. 继续把纯 Python、无 UE 运行依赖的旧脚本迁入包内。
-3. 对 UE Python 自动化脚本抽 shared helpers，减少重复的路径推断、actor 查找、材质/标签处理。
+3. 继续对 UE Python 自动化脚本抽 shared helpers，减少重复的 actor、材质、标签处理。
 4. 保持旧入口可运行，确认 smoke 通过后再提交。
 ```
