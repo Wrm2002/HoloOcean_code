@@ -70,42 +70,11 @@ if [ "$PREPARE_YOLO" = "1" ]; then
   rm -rf "$YOLO_OUT"
 fi
 
-STEP5_SCENARIO="$SCENARIO" \
-STEP5_DATASET="$DATASET" \
-STEP5_MAX_FRAMES="$MAX_FRAMES" \
-STEP5_MAX_TICKS="$MAX_TICKS" \
-  "$PROJECT_ROOT/.venv/bin/python" - <<'PY'
-import os
-from pathlib import Path
-
-import holoocean
-
-scenario = os.environ["STEP5_SCENARIO"]
-dataset = Path(os.environ["STEP5_DATASET"])
-index = dataset / "dataset_index.csv"
-max_frames = int(os.environ["STEP5_MAX_FRAMES"])
-max_ticks = int(os.environ["STEP5_MAX_TICKS"])
-
-def frame_count():
-    if not index.exists():
-        return 0
-    return max(0, len(index.read_text(encoding="utf-8").splitlines()) - 1)
-
-print("START", scenario, flush=True)
-with holoocean.make(scenario, show_viewport=False, window_res=(320, 240)) as env:
-    for tick in range(1, max_ticks + 1):
-        state = env.tick()
-        frames = frame_count()
-        if tick % 100 == 0 or frames >= max_frames:
-            print("tick", tick, "frames", frames, sorted(state.keys()), flush=True)
-        if frames >= max_frames:
-            break
-
-frames = frame_count()
-print("DONE frames", frames, "dataset", dataset, flush=True)
-if frames < max_frames:
-    raise SystemExit("collected {} frames, expected {}".format(frames, max_frames))
-PY
+"$PROJECT_ROOT/.venv/bin/python" -m wrm_pipeline capture-holoocean \
+  --scenario "$SCENARIO" \
+  --dataset "$DATASET" \
+  --max-frames "$MAX_FRAMES" \
+  --max-ticks "$MAX_TICKS"
 
 if [ "$RUN_AUDIT" = "1" ]; then
   echo "== audit dataset =="

@@ -9,6 +9,7 @@ from pathlib import Path
 from unittest.mock import patch
 
 from wrm_pipeline.cli import build_parser
+from wrm_pipeline.capture import frame_count
 from wrm_pipeline.final_exam import status
 from wrm_pipeline.paths import ProjectPaths
 from wrm_pipeline.scripts_catalog import classify_script
@@ -42,6 +43,7 @@ class CliTests(unittest.TestCase):
                 "validate-route-b-package",
                 "validate-bigworld-readiness",
                 "train-tiny-sonar",
+                "capture-holoocean",
                 "analyze-yolo-predictions",
                 "run-legacy",
             }.issubset(subparsers.choices)
@@ -93,6 +95,16 @@ class BigWorldTileTests(unittest.TestCase):
 
         self.assertEqual(len(tiles), 1)
         self.assertAlmostEqual(surface_z(tiles, 5.0, 5.0), 192.0)
+
+
+class CaptureTests(unittest.TestCase):
+    def test_frame_count_reads_dataset_index_rows(self) -> None:
+        with tempfile.TemporaryDirectory() as root:
+            dataset = Path(root)
+            self.assertEqual(frame_count(dataset), 0)
+
+            (dataset / "dataset_index.csv").write_text("frame,path\n0,a\n1,b\n", encoding="utf-8")
+            self.assertEqual(frame_count(dataset), 2)
 
 
 if __name__ == "__main__":

@@ -54,42 +54,11 @@ cp -a "$PACKAGE_SRC/." "$PACKAGE_DST/"
 echo "== run HoloOcean final-exam capture =="
 rm -rf "$DATASET" "$AUDIT_OUT"
 
-FINAL_SCENARIO="$SCENARIO" \
-FINAL_DATASET="$DATASET" \
-FINAL_MAX_FRAMES="$MAX_FRAMES" \
-FINAL_MAX_TICKS="$MAX_TICKS" \
-  "$PROJECT_ROOT/.venv/bin/python" - <<'PY'
-import os
-from pathlib import Path
-
-import holoocean
-
-scenario = os.environ["FINAL_SCENARIO"]
-dataset = Path(os.environ["FINAL_DATASET"])
-index = dataset / "dataset_index.csv"
-max_frames = int(os.environ["FINAL_MAX_FRAMES"])
-max_ticks = int(os.environ["FINAL_MAX_TICKS"])
-
-def frame_count():
-    if not index.exists():
-        return 0
-    return max(0, len(index.read_text(encoding="utf-8").splitlines()) - 1)
-
-print("START", scenario, flush=True)
-with holoocean.make(scenario, show_viewport=False, window_res=(320, 240)) as env:
-    for tick in range(1, max_ticks + 1):
-        state = env.tick()
-        frames = frame_count()
-        if tick % 100 == 0 or frames >= max_frames:
-            print("tick", tick, "frames", frames, sorted(state.keys()), flush=True)
-        if frames >= max_frames:
-            break
-
-frames = frame_count()
-print("DONE frames", frames, "dataset", dataset, flush=True)
-if frames < max_frames:
-    raise SystemExit("collected {} frames, expected {}".format(frames, max_frames))
-PY
+"$PROJECT_ROOT/.venv/bin/python" -m wrm_pipeline capture-holoocean \
+  --scenario "$SCENARIO" \
+  --dataset "$DATASET" \
+  --max-frames "$MAX_FRAMES" \
+  --max-ticks "$MAX_TICKS"
 
 echo "== audit dataset =="
 "$PROJECT_ROOT/.venv/bin/python" "$PROJECT_ROOT/scripts/audit_sonar_dataset.py" \

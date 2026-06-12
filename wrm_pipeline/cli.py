@@ -9,6 +9,7 @@ from pathlib import Path
 from .baseline import analyze_yolo_predictions, prepare_sonar_baseline_dataset
 from .audits.sonar_dataset import run_audit as run_sonar_audit
 from .audits.visual_quality import run_visual_quality_audit
+from .capture import run_capture
 from .catalog import FINAL_EXAM_BATCHES
 from .final_exam import rebuild_final_exam_splits, run_legacy_multibatch, run_legacy_single, status
 from .paths import ProjectPaths
@@ -82,6 +83,15 @@ def build_parser() -> argparse.ArgumentParser:
     train_tiny.add_argument("--lr", type=float, default=0.5)
     train_tiny.add_argument("--test-ratio", type=float, default=0.25)
     train_tiny.add_argument("--seed", type=int, default=7)
+
+    capture = sub.add_parser("capture-holoocean", help="Run a HoloOcean scenario until a dataset reaches N frames")
+    capture.add_argument("--scenario", required=True)
+    capture.add_argument("--dataset", required=True, type=Path)
+    capture.add_argument("--max-frames", required=True, type=int)
+    capture.add_argument("--max-ticks", required=True, type=int)
+    capture.add_argument("--show-viewport", action="store_true")
+    capture.add_argument("--window-width", type=int, default=320)
+    capture.add_argument("--window-height", type=int, default=240)
 
     analysis = sub.add_parser("analyze-yolo-predictions", help="Summarize YOLO txt predictions against a split")
     analysis.add_argument("--dataset", required=True, type=Path)
@@ -209,6 +219,18 @@ def main(argv: list[str] | None = None) -> None:
             lr=args.lr,
             test_ratio=args.test_ratio,
             seed=args.seed,
+        )
+        print(json.dumps(stats, indent=2, ensure_ascii=False))
+        return
+
+    if args.command == "capture-holoocean":
+        stats = run_capture(
+            args.scenario,
+            args.dataset,
+            max_frames=args.max_frames,
+            max_ticks=args.max_ticks,
+            show_viewport=args.show_viewport,
+            window_res=(args.window_width, args.window_height),
         )
         print(json.dumps(stats, indent=2, ensure_ascii=False))
         return
