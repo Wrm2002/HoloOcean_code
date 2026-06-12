@@ -11,6 +11,12 @@ from unittest.mock import patch
 from wrm_pipeline.cli import build_parser
 from wrm_pipeline.capture import frame_count
 from wrm_pipeline.final_exam import status
+from wrm_pipeline.final_exam_scene_config import (
+    FINAL_EXAM_FBX_TARGETS,
+    FINAL_EXAM_ROUTES,
+    FINAL_EXAM_SCANNER,
+    FINAL_EXAM_STATIC_TARGETS,
+)
 from wrm_pipeline.paths import ProjectPaths
 from wrm_pipeline.scripts_catalog import classify_script
 from wrm_pipeline.terrain.bigworld_tiles import load_tiles, surface_z
@@ -71,6 +77,24 @@ class StatusTests(unittest.TestCase):
         self.assertNotIn("legacy_remote_note", info)
         self.assertEqual(info["backup"]["github"], "git@github.com:Wrm2002/HoloOcean_code.git")
         self.assertEqual(info["backup"]["local_full_branch"], "backup/pre-refactor-20260612")
+
+
+class FinalExamSceneConfigTests(unittest.TestCase):
+    def test_scene_config_keeps_expected_routes_scanner_and_target_counts(self) -> None:
+        self.assertEqual(
+            set(FINAL_EXAM_ROUTES),
+            {"route_a", "route_b_cross", "route_c_reverse_far", "route_d_close_low"},
+        )
+        self.assertEqual(FINAL_EXAM_SCANNER["num_traces"], 1000)
+        self.assertEqual(FINAL_EXAM_SCANNER["vertical_samples"], 11)
+
+        class_counts: dict[int, int] = {}
+        for target in [*FINAL_EXAM_FBX_TARGETS, *FINAL_EXAM_STATIC_TARGETS]:
+            class_id = target["class_id"]
+            class_counts[class_id] = class_counts.get(class_id, 0) + 1
+
+        self.assertEqual(len(FINAL_EXAM_FBX_TARGETS) + len(FINAL_EXAM_STATIC_TARGETS), 22)
+        self.assertEqual(class_counts, {3: 5, 4: 7, 5: 4, 6: 6})
 
 
 class BigWorldTileTests(unittest.TestCase):

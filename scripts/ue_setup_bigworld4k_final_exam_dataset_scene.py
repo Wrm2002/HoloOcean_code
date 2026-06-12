@@ -15,6 +15,12 @@ if str(SCRIPTS_DIR) not in sys.path:
     sys.path.append(str(SCRIPTS_DIR))
 
 import wrm_bigworld4k_ue_shared as ue_shared
+from wrm_pipeline.final_exam_scene_config import (
+    FINAL_EXAM_FBX_TARGETS,
+    FINAL_EXAM_ROUTES,
+    FINAL_EXAM_SCANNER,
+    FINAL_EXAM_STATIC_TARGETS,
+)
 from wrm_pipeline.terrain.bigworld_tiles import load_tiles, surface_z
 
 import unreal
@@ -47,6 +53,11 @@ WRM_ROCK_MATERIAL_PATH = WRM_MATERIAL_DIR + "/M_WRM_Rock_DarkWet.M_WRM_Rock_Dark
 WRM_METAL_MATERIAL_PATH = WRM_MATERIAL_DIR + "/M_WRM_Metal_DarkWet.M_WRM_Metal_DarkWet"
 WRM_SAND_MATERIAL_PATH = WRM_MATERIAL_DIR + "/M_WRM_Sand_Muted.M_WRM_Sand_Muted"
 WRM_PLANT_MATERIAL_PATH = WRM_MATERIAL_DIR + "/M_WRM_Plant_Kelp.M_WRM_Plant_Kelp"
+STATIC_TARGET_MATERIAL_PATHS = {
+    "rock": WRM_ROCK_MATERIAL_PATH,
+    "sand": WRM_SAND_MATERIAL_PATH,
+    "plant": WRM_PLANT_MATERIAL_PATH,
+}
 
 
 def try_set(obj, prop, value):
@@ -156,6 +167,24 @@ def spawn_static_target(tiles, spec, spawned):
     unreal.log("WRM_FINAL_TARGET {}".format(json.dumps(entry, ensure_ascii=False)))
 
 
+def build_static_target_spec(config):
+    spec = {
+        "label": PREFIX + config["label_suffix"],
+        "class_name": config["class_id"],
+        "mesh": config["mesh"],
+        "xy": tuple(config["xy"]),
+        "scale": unreal.Vector(*config["scale"]),
+        "half_height": config["half_height"],
+        "tags": list(config["tags"]),
+        "material_asset": STATIC_TARGET_MATERIAL_PATHS[config["material_key"]],
+    }
+    if "rotation" in config:
+        spec["rotation"] = unreal.Rotator(*config["rotation"])
+    if "clearance" in config:
+        spec["clearance"] = config["clearance"]
+    return spec
+
+
 def spawn_fbx_target(tiles, fbx_meshes, prefix8, label_suffix, class_id, material_tag, xy, yaw, desired_height, spawned):
     mesh_info = fbx_meshes[prefix8]
     mesh = unreal.EditorAssetLibrary.load_asset(mesh_info["path"])
@@ -196,86 +225,11 @@ def look_at_rotation(start, target):
 
 
 def variant_config():
-    variants = {
-        "route_a": {
-            "description": "baseline diagonal survey through all target clusters",
-            "path_xy": [
-                (-306000.0, -270000.0),
-                (-295000.0, -266000.0),
-                (-284000.0, -261500.0),
-                (-273000.0, -257500.0),
-                (-262000.0, -252000.0),
-                (-250000.0, -246500.0),
-                (-238000.0, -241500.0),
-                (-226000.0, -236000.0),
-                (-215000.0, -231500.0),
-            ],
-            "altitude": 3900.0,
-            "speed": 700.0,
-            "trace_length": 135000.0,
-            "vertical_fov": 34.0,
-            "center_pitch": -1.5,
-        },
-        "route_b_cross": {
-            "description": "cross-angle pass from the northern side for stronger view-angle variation",
-            "path_xy": [
-                (-302000.0, -252000.0),
-                (-290000.0, -257800.0),
-                (-278000.0, -264000.0),
-                (-266000.0, -258800.0),
-                (-254000.0, -250000.0),
-                (-242000.0, -246000.0),
-                (-230000.0, -241000.0),
-                (-218000.0, -236500.0),
-            ],
-            "altitude": 3600.0,
-            "speed": 640.0,
-            "trace_length": 125000.0,
-            "vertical_fov": 38.0,
-            "center_pitch": -0.5,
-        },
-        "route_c_reverse_far": {
-            "description": "reverse and higher-altitude pass for longer range and opposite headings",
-            "path_xy": [
-                (-214000.0, -227000.0),
-                (-225000.0, -233000.0),
-                (-237000.0, -238000.0),
-                (-249000.0, -243500.0),
-                (-261000.0, -249000.0),
-                (-273000.0, -254000.0),
-                (-285000.0, -258500.0),
-                (-298000.0, -264000.0),
-                (-309000.0, -268500.0),
-            ],
-            "altitude": 5200.0,
-            "speed": 820.0,
-            "trace_length": 155000.0,
-            "vertical_fov": 32.0,
-            "center_pitch": -3.0,
-        },
-        "route_d_close_low": {
-            "description": "closer and lower pass to increase occlusion and near-target scale variation",
-            "path_xy": [
-                (-292000.0, -265500.0),
-                (-284500.0, -263200.0),
-                (-276500.0, -259500.0),
-                (-267500.0, -254500.0),
-                (-258000.0, -250800.0),
-                (-247000.0, -246800.0),
-                (-236000.0, -241800.0),
-                (-226000.0, -236800.0),
-                (-217000.0, -233000.0),
-            ],
-            "altitude": 2700.0,
-            "speed": 540.0,
-            "trace_length": 95000.0,
-            "vertical_fov": 42.0,
-            "center_pitch": 0.5,
-        },
-    }
-    if VARIANT not in variants:
-        raise RuntimeError("unknown WRM_FINAL_EXAM_VARIANT '{}'; expected one of {}".format(VARIANT, sorted(variants)))
-    return variants[VARIANT]
+    if VARIANT not in FINAL_EXAM_ROUTES:
+        raise RuntimeError(
+            "unknown WRM_FINAL_EXAM_VARIANT '{}'; expected one of {}".format(VARIANT, sorted(FINAL_EXAM_ROUTES))
+        )
+    return FINAL_EXAM_ROUTES[VARIANT]
 
 
 def spawn_emitter(tiles):
@@ -307,9 +261,9 @@ def spawn_emitter(tiles):
             auto_save_interval_seconds=AUTO_SAVE_INTERVAL_SECONDS,
             max_auto_save_frames=MAX_AUTO_SAVE_FRAMES,
             rgb_exposure_bias=RGB_EXPOSURE_BIAS,
-            num_traces=1000,
-            degrees_per_trace=0.15,
-            vertical_samples=11,
+            num_traces=FINAL_EXAM_SCANNER["num_traces"],
+            degrees_per_trace=FINAL_EXAM_SCANNER["degrees_per_trace"],
+            vertical_samples=FINAL_EXAM_SCANNER["vertical_samples"],
             vertical_fov_degrees=config["vertical_fov"],
             center_pitch_offset_degrees=config["center_pitch"],
             log_prefix="WRM_FINAL",
@@ -338,144 +292,41 @@ def main():
     ensure_environment()
     assign_landscape_material()
 
-    # Rock class: AIGC rocks plus two known rock meshes for shape diversity.
-    spawn_fbx_target(tiles, fbx_meshes, "0e98aea3", "Rock_Boulder_A", 3, "material_rock", (-281000.0, -262500.0), 12.0, 2700.0, spawned)
-    spawn_fbx_target(tiles, fbx_meshes, "a6cf3b83", "Rock_Boulder_B", 3, "material_rock", (-257500.0, -249500.0), 64.0, 2450.0, spawned)
-    spawn_fbx_target(tiles, fbx_meshes, "b5bba796", "Rock_ReefCluster", 3, "material_rock", (-232000.0, -239500.0), -28.0, 2400.0, spawned)
+    for class_id in (3, 4):
+        for spec in FINAL_EXAM_FBX_TARGETS:
+            if spec["class_id"] != class_id:
+                continue
+            spawn_fbx_target(
+                tiles,
+                fbx_meshes,
+                spec["prefix8"],
+                spec["label_suffix"],
+                spec["class_id"],
+                spec["material_tag"],
+                tuple(spec["xy"]),
+                spec["yaw"],
+                spec["desired_height"],
+                spawned,
+            )
 
-    supplemental = [
-        {
-            "label": PREFIX + "Target_Class3_Rock_Fragment_A",
-            "class_name": 3,
-            "mesh": "/Game/UnderWaterContent/rocks_rock_007.rocks_rock_007",
-            "xy": (-272000.0, -255800.0),
-            "scale": unreal.Vector(8.5, 9.5, 8.0),
-            "rotation": unreal.Rotator(0.0, 0.0, 31.0),
-            "half_height": 780.0,
-            "tags": ["sonar_target", "class_3", "material_rock", "final_exam_asset"],
-            "material_asset": WRM_ROCK_MATERIAL_PATH,
-        },
-        {
-            "label": PREFIX + "Target_Class3_Rock_Fragment_B",
-            "class_name": 3,
-            "mesh": "/Game/UnderWaterContent/rocks_rock_015.rocks_rock_015",
-            "xy": (-246500.0, -243500.0),
-            "scale": unreal.Vector(7.0, 6.0, 6.5),
-            "rotation": unreal.Rotator(0.0, 0.0, -18.0),
-            "half_height": 650.0,
-            "tags": ["sonar_target", "class_3", "material_rock", "final_exam_asset"],
-            "material_asset": WRM_ROCK_MATERIAL_PATH,
-        },
-    ]
+    for spec in FINAL_EXAM_STATIC_TARGETS:
+        spawn_static_target(tiles, build_static_target_spec(spec), spawned)
 
-    # Metal class: industrial debris, panels, pipe elbow, valve, spool and pipe section.
-    metal_specs = [
-        ("130723ea", "Metal_DeviceBox", (-276000.0, -258500.0), 92.0, 2200.0),
-        ("2a1f0dc7", "Metal_CableSpool", (-266000.0, -253200.0), 18.0, 1850.0),
-        ("2ce8847a", "Metal_Plate_A", (-259000.0, -252200.0), -22.0, 1700.0),
-        ("5969165b", "Metal_Valve", (-249500.0, -247800.0), 48.0, 2300.0),
-        ("7c8159c4", "Metal_Panel_B", (-241000.0, -243800.0), 8.0, 1050.0),
-        ("c30858cd", "Metal_ElbowPipe", (-230000.0, -238200.0), -36.0, 2350.0),
-        ("fdc465a5", "Metal_FlangePipe", (-221500.0, -234200.0), 14.0, 2200.0),
-    ]
-    for prefix8, suffix, xy, yaw, height in metal_specs:
-        spawn_fbx_target(tiles, fbx_meshes, prefix8, suffix, 4, "material_metal", xy, yaw, height, spawned)
-
-    # Sand class: low mounds and ridges for seabed-change targets.
-    supplemental.extend(
-        [
-            {
-                "label": PREFIX + "Target_Class5_Sand_Mound_A",
-                "class_name": 5,
-                "mesh": "/Engine/BasicShapes/Sphere.Sphere",
-                "xy": (-288000.0, -264500.0),
-                "scale": unreal.Vector(35.0, 28.0, 10.0),
-                "half_height": 520.0,
-                "clearance": 110.0,
-                "tags": ["sonar_target", "class_5", "material_sand", "final_exam_asset"],
-                "material_asset": WRM_SAND_MATERIAL_PATH,
-            },
-            {
-                "label": PREFIX + "Target_Class5_Sand_Mound_B",
-                "class_name": 5,
-                "mesh": "/Engine/BasicShapes/Sphere.Sphere",
-                "xy": (-253000.0, -245800.0),
-                "scale": unreal.Vector(42.0, 30.0, 13.0),
-                "rotation": unreal.Rotator(0.0, 0.0, 20.0),
-                "half_height": 680.0,
-                "clearance": 120.0,
-                "tags": ["sonar_target", "class_5", "material_sand", "final_exam_asset"],
-                "material_asset": WRM_SAND_MATERIAL_PATH,
-            },
-            {
-                "label": PREFIX + "Target_Class5_Sand_Ridge_A",
-                "class_name": 5,
-                "mesh": "/Engine/BasicShapes/Cube.Cube",
-                "xy": (-238000.0, -241000.0),
-                "scale": unreal.Vector(38.0, 7.0, 6.0),
-                "rotation": unreal.Rotator(0.0, 0.0, -31.0),
-                "half_height": 350.0,
-                "clearance": 100.0,
-                "tags": ["sonar_target", "class_5", "material_sand", "final_exam_asset"],
-                "material_asset": WRM_SAND_MATERIAL_PATH,
-            },
-            {
-                "label": PREFIX + "Target_Class5_Sand_Ridge_B",
-                "class_name": 5,
-                "mesh": "/Engine/BasicShapes/Cube.Cube",
-                "xy": (-224000.0, -232000.0),
-                "scale": unreal.Vector(30.0, 6.5, 5.0),
-                "rotation": unreal.Rotator(0.0, 0.0, 12.0),
-                "half_height": 310.0,
-                "clearance": 100.0,
-                "tags": ["sonar_target", "class_5", "material_sand", "final_exam_asset"],
-                "material_asset": WRM_SAND_MATERIAL_PATH,
-            },
-        ]
-    )
-
-    # Plant backup class: broader collision silhouettes so class_6 appears reliably in sonar labels.
-    supplemental.extend(
-        [
-            {
-                "label": PREFIX + "Target_Class6_Plant_Tall_Backup_A",
-                "class_name": 6,
-                "mesh": "/Engine/BasicShapes/Cone.Cone",
-                "xy": (-283500.0, -262000.0),
-                "scale": unreal.Vector(5.5, 5.5, 26.0),
-                "rotation": unreal.Rotator(0.0, 0.0, -12.0),
-                "half_height": 1300.0,
-                "clearance": 100.0,
-                "tags": ["sonar_target", "class_6", "material_plant", "final_exam_asset", "plant_collision_backup"],
-                "material_asset": WRM_PLANT_MATERIAL_PATH,
-            },
-            {
-                "label": PREFIX + "Target_Class6_Plant_Tall_Backup_B",
-                "class_name": 6,
-                "mesh": "/Engine/BasicShapes/Cone.Cone",
-                "xy": (-259500.0, -250500.0),
-                "scale": unreal.Vector(5.0, 5.0, 24.0),
-                "rotation": unreal.Rotator(0.0, 0.0, 24.0),
-                "half_height": 1200.0,
-                "clearance": 100.0,
-                "tags": ["sonar_target", "class_6", "material_plant", "final_exam_asset", "plant_collision_backup"],
-                "material_asset": WRM_PLANT_MATERIAL_PATH,
-            },
-        ]
-    )
-
-    for spec in supplemental:
-        spawn_static_target(tiles, spec, spawned)
-
-    # Plant class: same FBX sea-grass asset placed close to the survey path with varied scale.
-    plant_specs = [
-        ("Plant_Grass_A", (-286500.0, -263000.0), -8.0, 2450.0),
-        ("Plant_Grass_B", (-275500.0, -257800.0), 26.0, 2250.0),
-        ("Plant_Grass_C", (-260500.0, -251000.0), 64.0, 2450.0),
-        ("Plant_Grass_D", (-238500.0, -241500.0), -34.0, 2250.0),
-    ]
-    for suffix, xy, yaw, height in plant_specs:
-        spawn_fbx_target(tiles, fbx_meshes, "6970a89c", suffix, 6, "material_plant", xy, yaw, height, spawned)
+    for spec in FINAL_EXAM_FBX_TARGETS:
+        if spec["class_id"] != 6:
+            continue
+        spawn_fbx_target(
+            tiles,
+            fbx_meshes,
+            spec["prefix8"],
+            spec["label_suffix"],
+            spec["class_id"],
+            spec["material_tag"],
+            tuple(spec["xy"]),
+            spec["yaw"],
+            spec["desired_height"],
+            spawned,
+        )
 
     emitter_config = spawn_emitter(tiles)
 

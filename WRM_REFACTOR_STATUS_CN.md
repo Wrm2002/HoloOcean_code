@@ -26,7 +26,7 @@ git@github.com:Wrm2002/HoloOcean_code.git
 
 GitHub 重构后代码备份：
 备份分支：backup/refactor-code-20260612
-备份提交：5dee715136871b32cca091a8aae898aac88ac2d6
+备份提交：以远程分支 HEAD 为准，每阶段重构后同步一次
 
 本地完整备份分支：
 backup/pre-refactor-20260612
@@ -43,6 +43,7 @@ refactor/wrm-project-structure
 wrm_pipeline/
   paths.py                  # 项目根目录、HoloOcean world、常用路径
   catalog.py                # FinalExam 批次配置
+  final_exam_scene_config.py # FinalExam UE route/target/scanner 数据表
   final_exam.py             # 高层数据集操作
   capture.py                # HoloOcean scenario 采集 runner
   classes.py                # 识别类别和 class remap 元数据
@@ -224,6 +225,8 @@ scripts/ue_setup_bigworld4k_multiclass_dataset_scene.py
 
 `run_bigworld4k_final_exam_dataset.sh` 现在会在 UE setup 前删除旧 setup report，并在 UE 返回后校验本次 report 的 `output_directory`、`file_prefix`、`max_frames`、`variant`。这是为了防止 UnrealEditor 执行 Python 失败但仍返回 0，导致后续继续打包旧配置。
 
+`scripts/ue_setup_bigworld4k_final_exam_dataset_scene.py` 的 route、FBX/static target 和 scanner 采样参数已经数据化到 `wrm_pipeline/final_exam_scene_config.py`，旧 UE 入口和环境变量保持兼容。
+
 ## 已验证
 
 已经跑过的轻量检查：
@@ -302,6 +305,30 @@ visual_quality: status=ok
 
 说明：第一次 smoke 抓到 `scripts/` 过早插入 `sys.path` 导致 `scripts/wrm_pipeline.py` 遮挡真正 `wrm_pipeline/` 包；已改成追加 `scripts/`，并用 setup report 校验阻断这类 UE Python 静默失败。
 
+FinalExam route/target/scanner 参数数据化后又跑过一次真实 UE/HoloOcean 端到端烟测：
+
+```bash
+WRM_FINAL_EXAM_BATCH_NAME=RefactorFinalConfigSmoke_2f_20260612 \
+WRM_FINAL_EXAM_FILE_PREFIX=refactor_final_config_2f_ \
+WRM_FINAL_EXAM_MAX_FRAMES=2 \
+WRM_FINAL_EXAM_MAX_TICKS=600 \
+WRM_FINAL_EXAM_VARIANT=route_a \
+sh scripts/run_bigworld4k_final_exam_dataset.sh
+```
+
+烟测结果：
+
+```text
+UE setup report check: ok
+scene target_count = 22
+scene class_counts = {'3': 5, '4': 7, '5': 4, '6': 6}
+UAT BuildCookRun: BUILD SUCCESSFUL, ExitCode=0
+HoloOcean capture: frames=2, max_frames=2, max_ticks=600
+dataset: /home/wrm/.local/share/holoocean/2.3.0/worlds/WRMAbyss/Linux/Holodeck/Saved/SonarDataset_RefactorFinalConfigSmoke_2f_20260612
+audit: wrm_projects/05_validation_outputs/final_exam_RefactorFinalConfigSmoke_2f_20260612_audit/audit_report.md
+visual_quality: status=ok
+```
+
 当前 `split-final-exam` 输出保持为：
 
 ```text
@@ -344,7 +371,7 @@ class_box_counts = {'0': 413, '1': 599, '2': 192, '3': 545}
 ## 下一步重构方向
 
 ```text
-1. 把 FinalExam route、target、scanner 参数继续从 UE 脚本里数据化，减少主脚本长度。
-2. 继续把其它 UE Python 自动化脚本接入 shared helpers，但保持旧入口命令不变。
+1. 继续把其它 UE Python 自动化脚本接入 shared helpers，但保持旧入口命令不变。
+2. 把更多无 UE 运行依赖的脚本迁入包内。
 3. 保持每次涉及 UE/HoloOcean 主链路后至少跑一次短帧 smoke。
 ```
