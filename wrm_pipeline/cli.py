@@ -6,7 +6,7 @@ import argparse
 import json
 from pathlib import Path
 
-from .baseline import analyze_yolo_predictions, prepare_sonar_baseline_dataset
+from .baseline import prepare_sonar_baseline_dataset
 from .audits.sonar_dataset import run_audit as run_sonar_audit
 from .audits.visual_quality import run_visual_quality_audit
 from .capture import run_capture
@@ -19,6 +19,7 @@ from .scripts_catalog import grouped_scripts
 from .sonar_yolo import prepare_sonar_yolo_dataset
 from .validation.bigworld_readiness import run_readiness_check
 from .validation.route_b_package import validate_package
+from .yolo_analysis import analyze_yolo_predictions
 
 
 def build_parser() -> argparse.ArgumentParser:
