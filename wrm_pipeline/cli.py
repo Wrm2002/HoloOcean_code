@@ -7,6 +7,8 @@ import json
 from pathlib import Path
 
 from .baseline import analyze_yolo_predictions, prepare_sonar_baseline_dataset
+from .audits.sonar_dataset import run_audit as run_sonar_audit
+from .audits.visual_quality import run_visual_quality_audit
 from .catalog import FINAL_EXAM_BATCHES
 from .final_exam import rebuild_final_exam_splits, run_legacy_multibatch, run_legacy_single, status
 from .paths import ProjectPaths
@@ -43,6 +45,19 @@ def build_parser() -> argparse.ArgumentParser:
     yolo.add_argument("--val-ratio", type=float, default=0.2)
     yolo.add_argument("--seed", type=int, default=7)
     yolo.add_argument("--no-overwrite", action="store_true")
+
+    sonar_audit = sub.add_parser("audit-sonar-dataset", help="Audit a SonarDatasetTools export")
+    sonar_audit.add_argument("--data", required=True, type=Path)
+    sonar_audit.add_argument("--out", required=True, type=Path)
+    sonar_audit.add_argument("--preview-frames", type=int, default=20)
+
+    visual_audit = sub.add_parser("audit-visual-quality", help="Audit RGB brightness for a generated dataset")
+    visual_audit.add_argument("--data", required=True, type=Path)
+    visual_audit.add_argument("--out", required=True, type=Path)
+    visual_audit.add_argument("--sample-size", type=int, default=256)
+    visual_audit.add_argument("--warn-luma", type=float, default=8.0)
+    visual_audit.add_argument("--warn-dark-ratio", type=float, default=0.95)
+    visual_audit.add_argument("--fail-on-warning", action="store_true")
 
     analysis = sub.add_parser("analyze-yolo-predictions", help="Summarize YOLO txt predictions against a split")
     analysis.add_argument("--dataset", required=True, type=Path)
@@ -107,6 +122,23 @@ def main(argv: list[str] | None = None) -> None:
             val_ratio=args.val_ratio,
             seed=args.seed,
             overwrite=not args.no_overwrite,
+        )
+        print(json.dumps(stats, indent=2, ensure_ascii=False))
+        return
+
+    if args.command == "audit-sonar-dataset":
+        stats = run_sonar_audit(args.data, args.out, preview_frames=args.preview_frames)
+        print(json.dumps(stats, indent=2, ensure_ascii=False))
+        return
+
+    if args.command == "audit-visual-quality":
+        stats = run_visual_quality_audit(
+            args.data,
+            args.out,
+            sample_size=args.sample_size,
+            warn_luma=args.warn_luma,
+            warn_dark_ratio=args.warn_dark_ratio,
+            fail_on_warning=args.fail_on_warning,
         )
         print(json.dumps(stats, indent=2, ensure_ascii=False))
         return
