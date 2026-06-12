@@ -1,52 +1,75 @@
 # WRM Python/Shell 工具脚本
 
-这个目录保存仓库级工具，不属于某一个 UE 子项目。
+这个目录保存仓库级工具，不属于某一个 UE 子项目。2026-06-12 重构后，推荐优先使用：
 
-## 脚本说明
-
-```text
-validate_wrm_pipeline.sh
-  检查当前主线关键文件是否存在，并验证轻量地形。
-
-validate_route_b_package_skeleton.py
-  检查 WRMAbyss package/scenario 骨架。
-
-validate_bigworld_readiness.py
-  离线检查 Gaea 4x4 tile 导入 CSV、.r16 文件、UE 坐标/缩放、WRMAbyss worlds/scenario 对齐，并输出大场景下一步验收报告。
-
-build_gaea_highres_import_specs.py
-  生成 Gaea 8192/16384 高分辨率 4x4 tile 的 UE 导入 CSV、JSON contract 和中文导入清单；只生成规格，不生成大体积高度图。
-
-generate_ocean_terrain_tiles_stdlib.py
-  不依赖 numpy/matplotlib，只用 Python 标准库生成 10km / 4x4 `.r16` 海底大地图、PGM 预览和 UE manifest。Windows 上缺科学计算包时优先用它。
-
-validate_big_world_tiles_stdlib.py
-  不依赖 numpy，验证标准库生成的大地图 tile 数量、尺寸、高度范围、边界连续性和 UE scale。
-
-validate_holoocean_scenarios.py
-  实际启动 WRMAbyss 的所有 HoloOcean scenario 并 tick 几帧。
-
-package_route_b_wrmabyss.sh
-  调用 Unreal AutomationTool 重新打包 WRMAbyss。
-
-audit_sonar_dataset.py
-  审计 SonarDatasetTools 输出的数据集，包括 RGB、sonar、YOLO、meta、point cloud CSV/PLY。
-
-prepare_sonar_yolo_dataset.py
-  把采集结果整理成 YOLO 图像数据集。
-
-train_line_trace_sonar_baseline.py
-  早期小识别基线，当前不是主线重点。
+```bash
+python3 -m wrm_pipeline <command>
 ```
 
-## 当前推荐先跑
+旧的 `scripts/*.py` 和 `scripts/*.sh` 路径继续保留，很多 Python 脚本已经变成 `wrm_pipeline/` 模块的兼容包装器，方便旧命令、旧文档和手工复现不被打断。
 
-```powershell
-python scripts\validate_bigworld_readiness.py
-python scripts\build_gaea_highres_import_specs.py
-python scripts\generate_ocean_terrain_tiles_stdlib.py --total-resolution 4096 --out wrm_projects\02_bigworld_terrain_generation\outputs\generated_terrain_4k_windows_YYYYMMDD
-python scripts\validate_big_world_tiles_stdlib.py --tiles-dir wrm_projects\02_bigworld_terrain_generation\outputs\generated_terrain_4k_windows_YYYYMMDD
-python scripts\validate_route_b_package_skeleton.py
+## 推荐入口
+
+```text
+python3 -m wrm_pipeline status
+  检查关键路径、FinalExam 数据、split 和输出是否存在。
+
+python3 -m wrm_pipeline list-scripts
+  按用途列出 legacy scripts，避免新对话盲读长脚本。
+
+python3 -m wrm_pipeline split-final-exam
+  重建 FinalExam 多模态 train/val/test。
+
+python3 -m wrm_pipeline check-final-exam
+  离线检查 FinalExam split、图片、YOLO label、meta、点云文件。
+
+python3 -m wrm_pipeline prepare-sonar-baseline
+  生成 sonar-only 4 类 YOLO remap 数据集。
+
+python3 -m wrm_pipeline prepare-sonar-yolo --data <SonarDataset_xxx> --out <yolo_out>
+  从单次 SonarDatasetTools 导出整理 YOLO 数据集。
+
+python3 -m wrm_pipeline audit-sonar-dataset --data <SonarDataset_xxx> --out <audit_out>
+  审计 RGB、sonar、YOLO、meta、point cloud CSV/PLY。
+
+python3 -m wrm_pipeline audit-visual-quality --data <dataset_dir> --out <audit_out>
+  审计 RGB 亮度、暗帧比例和预览图。
+
+python3 -m wrm_pipeline validate-route-b-package
+  检查 WRMAbyss package/scenario 骨架。
+
+python3 -m wrm_pipeline validate-bigworld-readiness --out <report_dir>
+  离线检查 BigWorld tile 导入 CSV、.r16 文件、UE 坐标/缩放、package/scenario。
+
+python3 -m wrm_pipeline run-legacy multibatch
+  调用旧的多批次采集 shell 入口。
+```
+
+## 已迁入包内的兼容脚本
+
+这些脚本路径仍可直接运行，但核心逻辑已经迁入 `wrm_pipeline/`：
+
+```text
+prepare_final_exam_multimodal_splits.py
+prepare_sonar_yolo_dataset.py
+audit_sonar_dataset.py
+audit_dataset_visual_quality.py
+validate_bigworld_readiness.py
+validate_route_b_package_skeleton.py
+generate_ocean_terrain_tiles_stdlib.py
+validate_big_world_tiles_stdlib.py
+build_gaea_highres_import_specs.py
+train_line_trace_sonar_baseline.py
+render_bigworld4k_scene_overview.py
+wrm_pipeline.py
+```
+
+地形/Gaea 工具目前还保留脚本入口：
+
+```bash
+python3 scripts/build_gaea_highres_import_specs.py
+python3 scripts/generate_ocean_terrain_tiles_stdlib.py --total-resolution 4096 --out wrm_projects/02_bigworld_terrain_generation/outputs/generated_terrain_4k_windows_YYYYMMDD
+python3 scripts/validate_big_world_tiles_stdlib.py --tiles-dir wrm_projects/02_bigworld_terrain_generation/outputs/generated_terrain_4k_windows_YYYYMMDD
 ```
 
 `build_gaea_highres_import_specs.py` 默认输出位置：
@@ -62,6 +85,29 @@ wrm_projects/05_validation_outputs/bigworld_readiness_YYYYMMDD/readiness_report.
 ```
 
 如果只看到 `no ViewportCapture sensor` 之类 warning，说明 package/scenario 骨架和 4x4 tile 文件本身可继续推进；回到 UE 后仍要目视确认地形拼接、水下效果、目标资产尺度和点云 `class_id`。
+
+## 仍作为主入口的长脚本
+
+这些脚本承担 UE/HoloOcean 自动化、打包或长时间采集任务，暂时不强行迁移：
+
+```text
+validate_wrm_pipeline.sh
+validate_holoocean_scenarios.py
+package_route_b_wrmabyss.sh
+package_route_b_wrmbigworld.sh
+run_bigworld4k_batch01.sh
+run_bigworld4k_final_exam_dataset.sh
+run_bigworld4k_final_exam_multibatch.sh
+run_bigworld4k_multiclass_smoke.sh
+run_bigworld4k_step5_dataset_batch.sh
+ue_*.py
+```
+
+Shell 脚本和主要 UE Python 自动化脚本已去掉硬编码项目根目录，会从脚本位置推断仓库根目录，也支持：
+
+```bash
+export WRM_PROJECT_ROOT=/path/to/holoocean
+```
 
 ## Windows Python 注意
 

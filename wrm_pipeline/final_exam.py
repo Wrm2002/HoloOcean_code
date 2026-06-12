@@ -48,5 +48,12 @@ def status(paths: ProjectPaths) -> dict[str, object]:
         "datasets": datasets,
         "split_stats": str(split_stats),
         "split_ready": split_stats.exists(),
-        "legacy_remote_note": "origin is upstream BYU HoloOcean in this checkout; create a WRM remote before pushing backups.",
+        "backup": {
+            "github": "git@github.com:Wrm2002/HoloOcean_code.git",
+            "code_only_branch": "backup/code-only-20260612",
+            "code_only_commit": "5785cdd8c4524b0621495b332fb67e7b77a4da83",
+            "local_full_branch": "backup/pre-refactor-20260612",
+            "refactor_branch": "refactor/wrm-project-structure",
+            "origin_note": "origin remains the upstream BYU HoloOcean remote in this checkout.",
+        },
     }
