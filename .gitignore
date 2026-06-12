@@ -130,3 +130,18 @@ engine/Saved/
 engine/Octrees/
 engine/Plugins/*/Intermediate/
 wrm_projects/05_validation_outputs/pipeline_validation_latest/
+
+# WRM/Unreal generated artifacts and large local outputs
+_archives/
+.mypy_cache/
+.ruff_cache/
+*.py[cod]
+engine/Plugins/*/Binaries/
+wrm_projects/**/Binaries/
+wrm_projects/**/Intermediate/
+wrm_projects/**/Saved/
+wrm_projects/04_wrmabyss_holoocean_package/**/Linux/
+wrm_projects/05_validation_outputs/
+wrm_projects/09_multimodal_distillation_recognition/datasets/
+wrm_projects/09_multimodal_distillation_recognition/experiments/
+wrm_projects/09_multimodal_distillation_recognition/pretrained/

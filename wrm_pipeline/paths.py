@@ -3,13 +3,28 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+import os
 from pathlib import Path
+
+
+def _repo_root() -> Path:
+    override = os.environ.get("WRM_PROJECT_ROOT")
+    if override:
+        return Path(override).expanduser().resolve()
+    return Path(__file__).resolve().parents[1]
+
+
+def _holoocean_world() -> Path:
+    override = os.environ.get("WRM_HOLOOCEAN_WORLD")
+    if override:
+        return Path(override).expanduser().resolve()
+    return Path.home() / ".local/share/holoocean/2.3.0/worlds/WRMAbyss"
 
 
 @dataclass(frozen=True)
 class ProjectPaths:
-    root: Path = Path("/home/wrm/holoocean")
-    holoocean_world: Path = Path.home() / ".local/share/holoocean/2.3.0/worlds/WRMAbyss"
+    root: Path = _repo_root()
+    holoocean_world: Path = _holoocean_world()
 
     @property
     def python(self) -> Path:

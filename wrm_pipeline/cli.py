@@ -12,6 +12,7 @@ from .final_exam import rebuild_final_exam_splits, run_legacy_multibatch, run_le
 from .paths import ProjectPaths
 from .previews import copy_final_exam_previews
 from .readiness import check_final_exam
+from .scripts_catalog import grouped_scripts
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -19,6 +20,7 @@ def build_parser() -> argparse.ArgumentParser:
     sub = parser.add_subparsers(dest="command", required=True)
 
     sub.add_parser("status", help="Print key project paths and artifact readiness")
+    sub.add_parser("list-scripts", help="Classify legacy scripts by workflow area")
 
     split = sub.add_parser("split-final-exam", help="Rebuild the final-exam train/val/test dataset")
     split.add_argument("--include-dark-close-frame", action="store_true")
@@ -55,6 +57,10 @@ def main(argv: list[str] | None = None) -> None:
 
     if args.command == "status":
         print(json.dumps(status(paths), indent=2, ensure_ascii=False))
+        return
+
+    if args.command == "list-scripts":
+        print(json.dumps(grouped_scripts(paths), indent=2, ensure_ascii=False))
         return
 
     if args.command == "split-final-exam":
