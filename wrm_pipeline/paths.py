@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 import os
 from pathlib import Path
 
@@ -23,8 +23,8 @@ def _holoocean_world() -> Path:
 
 @dataclass(frozen=True)
 class ProjectPaths:
-    root: Path = _repo_root()
-    holoocean_world: Path = _holoocean_world()
+    root: Path = field(default_factory=_repo_root)
+    holoocean_world: Path = field(default_factory=_holoocean_world)
 
     @property
     def python(self) -> Path:
