@@ -90,6 +90,7 @@ python3 -m wrm_pipeline run-legacy multibatch
 7. BigWorld4K final/multiclass UE 场景脚本已共享材质、backdrop、静态目标和 scanner 配置 helper。
 8. `run_bigworld4k_final_exam_dataset.sh` 已增加 UE setup report 校验，避免 UnrealEditor Python 静默失败后继续打包旧配置。
 9. FinalExam route、FBX/static target 和 scanner 采样参数已数据化到 `wrm_pipeline/final_exam_scene_config.py`，并通过 2 帧 UE/HoloOcean smoke。
+10. BigWorld4K multiclass target、emitter path 和 scanner 采样参数已数据化到 `wrm_pipeline/bigworld4k_multiclass_scene_config.py`；`run_bigworld4k_step5_dataset_batch.sh` 已增加 UE setup report 校验，并通过 2 帧 Step5 UE/HoloOcean smoke。
 ```
 
 ## 下一步

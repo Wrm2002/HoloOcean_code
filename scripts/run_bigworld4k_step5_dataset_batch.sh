@@ -33,6 +33,7 @@ DATASET="$PACKAGE_DST/Linux/Holodeck/$DATASET_REL"
 AUDIT_OUT="$PROJECT_ROOT/wrm_projects/05_validation_outputs/step5_${BATCH_NAME}_audit"
 YOLO_OUT="$PROJECT_ROOT/wrm_projects/05_validation_outputs/step5_${BATCH_NAME}_yolo"
 SUMMARY="$PROJECT_ROOT/wrm_projects/05_validation_outputs/step5_${BATCH_NAME}_summary.md"
+SETUP_REPORT="${WRM_BIGWORLD4K_SETUP_REPORT:-$PROJECT_ROOT/wrm_projects/05_validation_outputs/step5_${BATCH_NAME}_scene_setup_report.json}"
 
 cd "$PROJECT_ROOT"
 
@@ -43,14 +44,43 @@ echo "ticks: $MAX_TICKS"
 
 if [ "$RUN_UE_SETUP" = "1" ]; then
   echo "== UE setup =="
+  rm -f "$SETUP_REPORT"
   WRM_BIGWORLD4K_OUTPUT_DIR="$DATASET_REL" \
   WRM_BIGWORLD4K_FILE_PREFIX="$FILE_PREFIX" \
   WRM_BIGWORLD4K_MAX_FRAMES="$MAX_FRAMES" \
   WRM_BIGWORLD4K_SAVE_INTERVAL="$SAVE_INTERVAL" \
   WRM_BIGWORLD4K_RGB_EXPOSURE_BIAS="$RGB_EXPOSURE_BIAS" \
+  WRM_BIGWORLD4K_SETUP_REPORT="$SETUP_REPORT" \
     "$UE_EDITOR" "$UPROJECT" \
       -ExecutePythonScript="$PROJECT_ROOT/scripts/ue_setup_bigworld4k_multiclass_dataset_scene.py" \
       -unattended -nosplash
+
+  SETUP_REPORT="$SETUP_REPORT" \
+  EXPECTED_OUTPUT_DIR="$DATASET_REL" \
+  EXPECTED_FILE_PREFIX="$FILE_PREFIX" \
+  EXPECTED_MAX_FRAMES="$MAX_FRAMES" \
+    "$PROJECT_ROOT/.venv/bin/python" - <<'PY'
+import json
+import os
+from pathlib import Path
+
+report_path = Path(os.environ["SETUP_REPORT"])
+if not report_path.is_file():
+    raise SystemExit("UE setup report was not created: {}".format(report_path))
+report = json.loads(report_path.read_text(encoding="utf-8"))
+checks = {
+    "output_directory": os.environ["EXPECTED_OUTPUT_DIR"],
+    "file_prefix": os.environ["EXPECTED_FILE_PREFIX"],
+    "max_frames": int(os.environ["EXPECTED_MAX_FRAMES"]),
+    "target_count": 14,
+    "class_counts": {"3": 3, "4": 4, "5": 3, "6": 4},
+}
+for key, expected in checks.items():
+    actual = report.get(key)
+    if actual != expected:
+        raise SystemExit("UE setup report mismatch {}: {!r} != {!r}".format(key, actual, expected))
+print("UE setup report ok: {}".format(report_path))
+PY
 fi
 
 if [ "$RUN_PACKAGE" = "1" ]; then

@@ -1,5 +1,6 @@
 """Set up a multi-class BigWorld4K dataset smoke scene in the Holodeck project."""
 
+import json
 import os
 import sys
 from pathlib import Path
@@ -13,6 +14,11 @@ if str(SCRIPTS_DIR) not in sys.path:
     sys.path.append(str(SCRIPTS_DIR))
 
 import wrm_bigworld4k_ue_shared as ue_shared
+from wrm_pipeline.bigworld4k_multiclass_scene_config import (
+    MULTICLASS_EMITTER,
+    MULTICLASS_SCANNER,
+    MULTICLASS_STATIC_TARGETS,
+)
 from wrm_pipeline.terrain.bigworld_tiles import load_tiles, surface_z
 
 import unreal
@@ -20,6 +26,12 @@ import unreal
 
 MANIFEST = PROJECT_ROOT / "wrm_projects/02_bigworld_terrain_generation/outputs/generated_terrain_4k_windows_20260609/terrain_tiles_manifest.csv"
 MAP_PATH = "/Game/BigWorld4K20260609/Maps/Main_World_10km_4K_20260609"
+SETUP_REPORT = Path(
+    os.environ.get(
+        "WRM_BIGWORLD4K_SETUP_REPORT",
+        str(PROJECT_ROOT / "wrm_projects/05_validation_outputs/bigworld4k_multiclass_scene_setup_report.json"),
+    )
+)
 PREFIX = "WRM4K_"
 EMITTER_LABEL = PREFIX + "SonarDatasetEmitter_MultiClass01"
 EMITTER_CLASS_PATH = "/Script/SonarDatasetTools.SonarDatasetEmitterActor"
@@ -46,6 +58,12 @@ SAND_TARGET_MATERIAL_PATH = os.environ.get(
     "WRM_BIGWORLD4K_SAND_TARGET_MATERIAL",
     WRM_SAND_MATERIAL_PATH,
 )
+STATIC_TARGET_MATERIAL_PATHS = {
+    "rock": WRM_ROCK_MATERIAL_PATH,
+    "metal": WRM_METAL_MATERIAL_PATH,
+    "sand": SAND_TARGET_MATERIAL_PATH,
+    "plant": WRM_PLANT_MATERIAL_PATH,
+}
 
 
 def try_set(obj, prop, value):
@@ -145,6 +163,25 @@ def spawn_target(tiles, spec):
     _, entry = ue_shared.spawn_static_target(tiles, spec, log_prefix="WRM4K_MULTI")
     x, y, z = entry["location"]
     unreal.log("WRM4K_MULTI_TARGET {} loc=({:.1f},{:.1f},{:.1f}) scale={}".format(spec["label"], x, y, z, spec["scale"]))
+    return entry
+
+
+def build_target_spec(config):
+    spec = {
+        "label": PREFIX + config["label_suffix"],
+        "class_name": config["class_id"],
+        "mesh": config["mesh"],
+        "xy": tuple(config["xy"]),
+        "scale": unreal.Vector(*config["scale"]),
+        "half_height": config["half_height"],
+        "tags": list(config["tags"]),
+        "material_asset": STATIC_TARGET_MATERIAL_PATHS[config["material_key"]],
+    }
+    if "rotation" in config:
+        spec["rotation"] = unreal.Rotator(*config["rotation"])
+    if "clearance" in config:
+        spec["clearance"] = config["clearance"]
+    return spec
 
 
 def look_at_rotation(start, target):
@@ -157,43 +194,43 @@ def spawn_emitter(tiles):
     if not emitter_class or not scanner_class:
         raise RuntimeError("failed to load SonarDatasetTools classes")
 
-    start_xy = (-306000.0, -270000.0)
-    start = unreal.Vector(start_xy[0], start_xy[1], surface_z(tiles, *start_xy) + 3600.0)
-    focus = unreal.Vector(-242000.0, -256000.0, surface_z(tiles, -242000.0, -256000.0) + 2800.0)
+    emitter_config = MULTICLASS_EMITTER
+    scanner_config = MULTICLASS_SCANNER
+    path_xy = emitter_config["path_xy"]
+    start_xy = path_xy[0]
+    start = unreal.Vector(start_xy[0], start_xy[1], surface_z(tiles, *start_xy) + emitter_config["altitude"])
+    focus_xy = emitter_config["focus_xy"]
+    focus = unreal.Vector(focus_xy[0], focus_xy[1], surface_z(tiles, *focus_xy) + emitter_config["focus_altitude"])
     rotation = look_at_rotation(start, focus)
     actor = unreal.EditorLevelLibrary.spawn_actor_from_class(emitter_class, start, rotation)
     actor.set_actor_label(EMITTER_LABEL)
     actor.set_editor_property(
         "path_points",
         [
-            start,
-            unreal.Vector(-298000.0, -266000.0, surface_z(tiles, -298000.0, -266000.0) + 3600.0),
-            unreal.Vector(-290000.0, -262000.0, surface_z(tiles, -290000.0, -262000.0) + 3600.0),
-            unreal.Vector(-282000.0, -258000.0, surface_z(tiles, -282000.0, -258000.0) + 3600.0),
-            unreal.Vector(-274000.0, -254000.0, surface_z(tiles, -274000.0, -254000.0) + 3600.0),
-            unreal.Vector(-266000.0, -250000.0, surface_z(tiles, -266000.0, -250000.0) + 3600.0),
+            unreal.Vector(x, y, surface_z(tiles, x, y) + emitter_config["altitude"])
+            for x, y in path_xy
         ],
     )
     try_set(actor, "bMoveAlongPath", True)
     try_set(actor, "bLoopPath", False)
-    try_set(actor, "bFaceMovementDirection", False)
-    try_set(actor, "MovementSpeedCmPerSecond", 900.0)
+    try_set(actor, "bFaceMovementDirection", emitter_config["face_movement_direction"])
+    try_set(actor, "MovementSpeedCmPerSecond", emitter_config["speed"])
 
     scanner = actor.get_component_by_class(scanner_class)
     if scanner:
         ue_shared.configure_sonar_scanner(
             scanner,
-            trace_length=120000.0,
+            trace_length=scanner_config["trace_length"],
             output_directory=OUTPUT_DIRECTORY,
             file_prefix=FILE_PREFIX,
             auto_save_interval_seconds=AUTO_SAVE_INTERVAL_SECONDS,
             max_auto_save_frames=MAX_AUTO_SAVE_FRAMES,
             rgb_exposure_bias=RGB_EXPOSURE_BIAS,
-            num_traces=900,
-            degrees_per_trace=0.16,
-            vertical_samples=9,
-            vertical_fov_degrees=32.0,
-            center_pitch_offset_degrees=-1.5,
+            num_traces=scanner_config["num_traces"],
+            degrees_per_trace=scanner_config["degrees_per_trace"],
+            vertical_samples=scanner_config["vertical_samples"],
+            vertical_fov_degrees=scanner_config["vertical_fov"],
+            center_pitch_offset_degrees=scanner_config["center_pitch"],
             log_prefix="WRM4K_MULTI",
         )
     unreal.log(
@@ -201,6 +238,7 @@ def spawn_emitter(tiles):
             start, rotation, OUTPUT_DIRECTORY, FILE_PREFIX, MAX_AUTO_SAVE_FRAMES
         )
     )
+    return emitter_config
 
 
 unreal.log("WRM4K_MULTI_BEGIN")
@@ -213,153 +251,37 @@ ensure_wrm_material_library()
 ensure_environment()
 assign_landscape_material()
 
-targets = [
-    {
-        "label": PREFIX + "Target_Class3_Rock_Main",
-        "mesh": "/Game/UnderWaterContent/rocks_rock_012.rocks_rock_012",
-        "xy": (-252000.0, -270000.0),
-        "scale": unreal.Vector(18.0, 18.0, 18.0),
-        "half_height": 1500.0,
-        "tags": ["sonar_target", "class_3", "material_rock"],
-        "material_asset": WRM_ROCK_MATERIAL_PATH,
-    },
-    {
-        "label": PREFIX + "Target_Class3_Rock_Shoulder",
-        "mesh": "/Game/UnderWaterContent/rocks_rock_007.rocks_rock_007",
-        "xy": (-248500.0, -267500.0),
-        "scale": unreal.Vector(11.0, 12.0, 10.0),
-        "rotation": unreal.Rotator(0.0, 0.0, 35.0),
-        "half_height": 950.0,
-        "tags": ["sonar_target", "class_3", "material_rock"],
-        "material_asset": WRM_ROCK_MATERIAL_PATH,
-    },
-    {
-        "label": PREFIX + "Target_Class3_Rock_Fragment",
-        "mesh": "/Game/UnderWaterContent/rocks_rock_015.rocks_rock_015",
-        "xy": (-255500.0, -266500.0),
-        "scale": unreal.Vector(8.5, 7.5, 7.0),
-        "rotation": unreal.Rotator(0.0, 0.0, -22.0),
-        "half_height": 750.0,
-        "tags": ["sonar_target", "class_3", "material_rock"],
-        "material_asset": WRM_ROCK_MATERIAL_PATH,
-    },
-    {
-        "label": PREFIX + "Target_Class4_Metal_Pipe_A",
-        "mesh": "/Engine/BasicShapes/Cylinder.Cylinder",
-        "xy": (-240000.0, -257000.0),
-        "scale": unreal.Vector(12.0, 12.0, 52.0),
-        "rotation": unreal.Rotator(0.0, 0.0, 82.0),
-        "half_height": 2600.0,
-        "tags": ["sonar_target", "class_4", "material_metal"],
-        "material_asset": WRM_METAL_MATERIAL_PATH,
-    },
-    {
-        "label": PREFIX + "Target_Class4_Metal_Pipe_B",
-        "mesh": "/Engine/BasicShapes/Cylinder.Cylinder",
-        "xy": (-236500.0, -254800.0),
-        "scale": unreal.Vector(8.0, 8.0, 34.0),
-        "rotation": unreal.Rotator(0.0, 0.0, 126.0),
-        "half_height": 1700.0,
-        "tags": ["sonar_target", "class_4", "material_metal"],
-        "material_asset": WRM_METAL_MATERIAL_PATH,
-    },
-    {
-        "label": PREFIX + "Target_Class4_Metal_Crate_A",
-        "mesh": "/Engine/BasicShapes/Cube.Cube",
-        "xy": (-243000.0, -253800.0),
-        "scale": unreal.Vector(18.0, 10.0, 8.0),
-        "rotation": unreal.Rotator(0.0, 0.0, -18.0),
-        "half_height": 420.0,
-        "tags": ["sonar_target", "class_4", "material_metal"],
-        "material_asset": WRM_METAL_MATERIAL_PATH,
-    },
-    {
-        "label": PREFIX + "Target_Class4_Metal_Panel_A",
-        "mesh": "/Engine/BasicShapes/Cube.Cube",
-        "xy": (-238500.0, -259800.0),
-        "scale": unreal.Vector(22.0, 5.0, 3.0),
-        "rotation": unreal.Rotator(0.0, 0.0, 34.0),
-        "half_height": 220.0,
-        "tags": ["sonar_target", "class_4", "material_metal"],
-        "material_asset": WRM_METAL_MATERIAL_PATH,
-    },
-    {
-        "label": PREFIX + "Target_Class5_Sand_Mound_Main",
-        "mesh": "/Engine/BasicShapes/Sphere.Sphere",
-        "xy": (-262000.0, -246000.0),
-        "scale": unreal.Vector(42.0, 34.0, 16.0),
-        "half_height": 840.0,
-        "clearance": 180.0,
-        "tags": ["sonar_target", "class_5", "material_sand"],
-        "material_asset": SAND_TARGET_MATERIAL_PATH,
-    },
-    {
-        "label": PREFIX + "Target_Class5_Sand_Mound_Secondary",
-        "mesh": "/Engine/BasicShapes/Sphere.Sphere",
-        "xy": (-258800.0, -244800.0),
-        "scale": unreal.Vector(27.0, 21.0, 11.0),
-        "rotation": unreal.Rotator(0.0, 0.0, 18.0),
-        "half_height": 600.0,
-        "clearance": 180.0,
-        "tags": ["sonar_target", "class_5", "material_sand"],
-        "material_asset": SAND_TARGET_MATERIAL_PATH,
-    },
-    {
-        "label": PREFIX + "Target_Class5_Sand_Ridge",
-        "mesh": "/Engine/BasicShapes/Cube.Cube",
-        "xy": (-264000.0, -243800.0),
-        "scale": unreal.Vector(34.0, 8.0, 8.0),
-        "rotation": unreal.Rotator(0.0, 0.0, -32.0),
-        "half_height": 460.0,
-        "clearance": 160.0,
-        "tags": ["sonar_target", "class_5", "material_sand"],
-        "material_asset": SAND_TARGET_MATERIAL_PATH,
-    },
-    {
-        "label": PREFIX + "Target_Class6_Plant_Tall_A",
-        "mesh": "/Engine/BasicShapes/Cone.Cone",
-        "xy": (-216000.0, -234000.0),
-        "scale": unreal.Vector(7.0, 7.0, 32.0),
-        "half_height": 1600.0,
-        "tags": ["sonar_target", "class_6", "material_plant"],
-        "material_asset": WRM_PLANT_MATERIAL_PATH,
-    },
-    {
-        "label": PREFIX + "Target_Class6_Plant_Tall_B",
-        "mesh": "/Engine/BasicShapes/Cone.Cone",
-        "xy": (-213700.0, -232200.0),
-        "scale": unreal.Vector(5.0, 5.0, 25.0),
-        "rotation": unreal.Rotator(0.0, 0.0, 28.0),
-        "half_height": 1250.0,
-        "tags": ["sonar_target", "class_6", "material_plant"],
-        "material_asset": WRM_PLANT_MATERIAL_PATH,
-    },
-    {
-        "label": PREFIX + "Target_Class6_Plant_Young_A",
-        "mesh": "/Engine/BasicShapes/Cone.Cone",
-        "xy": (-218200.0, -231600.0),
-        "scale": unreal.Vector(4.0, 4.0, 18.0),
-        "rotation": unreal.Rotator(0.0, 0.0, -24.0),
-        "half_height": 900.0,
-        "tags": ["sonar_target", "class_6", "material_plant"],
-        "material_asset": WRM_PLANT_MATERIAL_PATH,
-    },
-    {
-        "label": PREFIX + "Target_Class6_Plant_Young_B",
-        "mesh": "/Engine/BasicShapes/Cone.Cone",
-        "xy": (-214900.0, -236800.0),
-        "scale": unreal.Vector(4.5, 4.5, 20.0),
-        "rotation": unreal.Rotator(0.0, 0.0, 12.0),
-        "half_height": 1000.0,
-        "tags": ["sonar_target", "class_6", "material_plant"],
-        "material_asset": WRM_PLANT_MATERIAL_PATH,
-    },
-]
+spawned = []
+for target_config in MULTICLASS_STATIC_TARGETS:
+    spawned.append(spawn_target(tiles, build_target_spec(target_config)))
+emitter_config = spawn_emitter(tiles)
 
-for target_spec in targets:
-    spawn_target(tiles, target_spec)
-spawn_emitter(tiles)
+class_counts = {}
+for target in spawned:
+    cls = str(target.get("class"))
+    class_counts[cls] = class_counts.get(cls, 0) + 1
+
+SETUP_REPORT.parent.mkdir(parents=True, exist_ok=True)
+SETUP_REPORT.write_text(
+    json.dumps(
+        {
+            "map": MAP_PATH,
+            "path_xy": emitter_config["path_xy"],
+            "emitter_altitude_cm": emitter_config["altitude"],
+            "trace_length_cm": MULTICLASS_SCANNER["trace_length"],
+            "output_directory": OUTPUT_DIRECTORY,
+            "file_prefix": FILE_PREFIX,
+            "max_frames": MAX_AUTO_SAVE_FRAMES,
+            "target_count": len(spawned),
+            "class_counts": class_counts,
+            "targets": spawned,
+        },
+        indent=2,
+        ensure_ascii=False,
+    ),
+    encoding="utf-8",
+)
 
 unreal.EditorLevelLibrary.save_current_level()
 unreal.EditorLoadingAndSavingUtils.save_dirty_packages(True, True)
-unreal.log("WRM4K_MULTI_DONE")
+unreal.log("WRM4K_MULTI_DONE target_count={} report={}".format(len(spawned), SETUP_REPORT))

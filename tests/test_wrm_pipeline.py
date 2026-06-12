@@ -8,6 +8,11 @@ import unittest
 from pathlib import Path
 from unittest.mock import patch
 
+from wrm_pipeline.bigworld4k_multiclass_scene_config import (
+    MULTICLASS_EMITTER,
+    MULTICLASS_SCANNER,
+    MULTICLASS_STATIC_TARGETS,
+)
 from wrm_pipeline.cli import build_parser
 from wrm_pipeline.capture import frame_count
 from wrm_pipeline.final_exam import status
@@ -95,6 +100,22 @@ class FinalExamSceneConfigTests(unittest.TestCase):
 
         self.assertEqual(len(FINAL_EXAM_FBX_TARGETS) + len(FINAL_EXAM_STATIC_TARGETS), 22)
         self.assertEqual(class_counts, {3: 5, 4: 7, 5: 4, 6: 6})
+
+
+class BigWorld4KMulticlassSceneConfigTests(unittest.TestCase):
+    def test_multiclass_config_keeps_expected_path_scanner_and_target_counts(self) -> None:
+        self.assertEqual(len(MULTICLASS_EMITTER["path_xy"]), 6)
+        self.assertEqual(MULTICLASS_EMITTER["altitude"], 3600.0)
+        self.assertEqual(MULTICLASS_SCANNER["trace_length"], 120000.0)
+        self.assertEqual(MULTICLASS_SCANNER["num_traces"], 900)
+
+        class_counts: dict[int, int] = {}
+        for target in MULTICLASS_STATIC_TARGETS:
+            class_id = target["class_id"]
+            class_counts[class_id] = class_counts.get(class_id, 0) + 1
+
+        self.assertEqual(len(MULTICLASS_STATIC_TARGETS), 14)
+        self.assertEqual(class_counts, {3: 3, 4: 4, 5: 3, 6: 4})
 
 
 class BigWorldTileTests(unittest.TestCase):

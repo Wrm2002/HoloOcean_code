@@ -43,6 +43,7 @@ refactor/wrm-project-structure
 wrm_pipeline/
   paths.py                  # 项目根目录、HoloOcean world、常用路径
   catalog.py                # FinalExam 批次配置
+  bigworld4k_multiclass_scene_config.py # BigWorld4K multiclass UE target/emitter/scanner 数据表
   final_exam_scene_config.py # FinalExam UE route/target/scanner 数据表
   final_exam.py             # 高层数据集操作
   capture.py                # HoloOcean scenario 采集 runner
@@ -223,9 +224,11 @@ scripts/ue_setup_bigworld4k_multiclass_dataset_scene.py
 
 其中 `run_bigworld4k_final_exam_dataset.sh` 和 `run_bigworld4k_step5_dataset_batch.sh` 已改为调用 `python3 -m wrm_pipeline capture-holoocean`，不再内嵌重复的 HoloOcean tick Python。
 
-`run_bigworld4k_final_exam_dataset.sh` 现在会在 UE setup 前删除旧 setup report，并在 UE 返回后校验本次 report 的 `output_directory`、`file_prefix`、`max_frames`、`variant`。这是为了防止 UnrealEditor 执行 Python 失败但仍返回 0，导致后续继续打包旧配置。
+`run_bigworld4k_final_exam_dataset.sh` 和 `run_bigworld4k_step5_dataset_batch.sh` 现在会在 UE setup 前删除旧 setup report，并在 UE 返回后校验本次 report 的关键字段。这是为了防止 UnrealEditor 执行 Python 失败但仍返回 0，导致后续继续打包旧配置。
 
 `scripts/ue_setup_bigworld4k_final_exam_dataset_scene.py` 的 route、FBX/static target 和 scanner 采样参数已经数据化到 `wrm_pipeline/final_exam_scene_config.py`，旧 UE 入口和环境变量保持兼容。
+
+`scripts/ue_setup_bigworld4k_multiclass_dataset_scene.py` 的 target、emitter path 和 scanner 采样参数已经数据化到 `wrm_pipeline/bigworld4k_multiclass_scene_config.py`，旧 Step5 入口和环境变量保持兼容。
 
 ## 已验证
 
@@ -326,6 +329,29 @@ UAT BuildCookRun: BUILD SUCCESSFUL, ExitCode=0
 HoloOcean capture: frames=2, max_frames=2, max_ticks=600
 dataset: /home/wrm/.local/share/holoocean/2.3.0/worlds/WRMAbyss/Linux/Holodeck/Saved/SonarDataset_RefactorFinalConfigSmoke_2f_20260612
 audit: wrm_projects/05_validation_outputs/final_exam_RefactorFinalConfigSmoke_2f_20260612_audit/audit_report.md
+visual_quality: status=ok
+```
+
+BigWorld4K multiclass target/emitter/scanner 参数数据化后跑过一次真实 Step5 UE/HoloOcean 端到端烟测：
+
+```bash
+WRM_STEP5_BATCH_NAME=RefactorMultiConfigSmoke_2f_20260612 \
+WRM_STEP5_FILE_PREFIX=refactor_multi_config_2f_ \
+WRM_STEP5_MAX_FRAMES=2 \
+WRM_STEP5_MAX_TICKS=600 \
+sh scripts/run_bigworld4k_step5_dataset_batch.sh
+```
+
+烟测结果：
+
+```text
+UE setup report check: ok
+scene target_count = 14
+scene class_counts = {'3': 3, '4': 4, '5': 3, '6': 4}
+UAT BuildCookRun: BUILD SUCCESSFUL, ExitCode=0
+HoloOcean capture: frames=2, max_frames=2, max_ticks=600
+dataset: /home/wrm/.local/share/holoocean/2.3.0/worlds/WRMAbyss/Linux/Holodeck/Saved/SonarDataset_RefactorMultiConfigSmoke_2f_20260612
+audit: wrm_projects/05_validation_outputs/step5_RefactorMultiConfigSmoke_2f_20260612_audit/audit_report.md
 visual_quality: status=ok
 ```
 

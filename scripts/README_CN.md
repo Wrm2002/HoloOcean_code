@@ -114,7 +114,9 @@ ue_*.py
 
 `ue_setup_bigworld4k_final_exam_dataset_scene.py` 的 route、FBX/static target 和 scanner 采样参数已经数据化到 `wrm_pipeline/final_exam_scene_config.py`；旧 UE 入口和环境变量仍保持兼容。
 
-`run_bigworld4k_final_exam_dataset.sh` 会校验 UE setup report，避免 UnrealEditor Python 执行失败但仍继续打包旧配置。
+`ue_setup_bigworld4k_multiclass_dataset_scene.py` 的 target、emitter path 和 scanner 采样参数已经数据化到 `wrm_pipeline/bigworld4k_multiclass_scene_config.py`；旧 Step5 入口和环境变量仍保持兼容。
+
+`run_bigworld4k_final_exam_dataset.sh` 和 `run_bigworld4k_step5_dataset_batch.sh` 会校验 UE setup report，避免 UnrealEditor Python 执行失败但仍继续打包旧配置。
 
 Shell 脚本和主要 UE Python 自动化脚本已去掉硬编码项目根目录，会从脚本位置推断仓库根目录，也支持：
 
