@@ -13,6 +13,7 @@ from .paths import ProjectPaths
 from .previews import copy_final_exam_previews
 from .readiness import check_final_exam
 from .scripts_catalog import grouped_scripts
+from .sonar_yolo import prepare_sonar_yolo_dataset
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -35,6 +36,13 @@ def build_parser() -> argparse.ArgumentParser:
     baseline.add_argument("--out", type=Path)
     baseline.add_argument("--no-overwrite", action="store_true")
     baseline.add_argument("--copy-images", action="store_true")
+
+    yolo = sub.add_parser("prepare-sonar-yolo", help="Build a generic YOLO dataset from one SonarDatasetTools export")
+    yolo.add_argument("--data", required=True, type=Path)
+    yolo.add_argument("--out", required=True, type=Path)
+    yolo.add_argument("--val-ratio", type=float, default=0.2)
+    yolo.add_argument("--seed", type=int, default=7)
+    yolo.add_argument("--no-overwrite", action="store_true")
 
     analysis = sub.add_parser("analyze-yolo-predictions", help="Summarize YOLO txt predictions against a split")
     analysis.add_argument("--dataset", required=True, type=Path)
@@ -88,6 +96,17 @@ def main(argv: list[str] | None = None) -> None:
             args.out,
             overwrite=not args.no_overwrite,
             copy_images=args.copy_images,
+        )
+        print(json.dumps(stats, indent=2, ensure_ascii=False))
+        return
+
+    if args.command == "prepare-sonar-yolo":
+        stats = prepare_sonar_yolo_dataset(
+            args.data,
+            args.out,
+            val_ratio=args.val_ratio,
+            seed=args.seed,
+            overwrite=not args.no_overwrite,
         )
         print(json.dumps(stats, indent=2, ensure_ascii=False))
         return
